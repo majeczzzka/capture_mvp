@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:capture_mvp/widgets/functionality_icon.dart';
+import 'package:capture_mvp/widgets/search_bar.dart';
+import 'package:capture_mvp/widgets/add_jar_dialog.dart';
 import '../widgets/logo.dart';
 import '../utils/app_colors.dart';
 
+/// A header widget displaying the app logo, add button, and search functionality.
 class HeaderWidget extends StatefulWidget {
-  final ValueChanged<String>
-      onSearchChanged; // Callback to notify search changes
+  final ValueChanged<String> onSearchChanged; // Callback to update search query
 
   const HeaderWidget({
     super.key,
@@ -17,30 +19,14 @@ class HeaderWidget extends StatefulWidget {
 }
 
 class HeaderWidgetState extends State<HeaderWidget> {
-  bool _isSearching = false;
-  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false; // Tracks if the search bar is active
 
+  /// Opens a dialog for adding a new jar
   void _showAddJarDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Add a New Jar'),
-          content: TextField(
-            decoration: InputDecoration(
-              hintText: 'Enter jar name',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Back', style: TextStyle(color: AppColors.fonts)),
-            ),
-          ],
-        );
+        return const AddJarDialog(); // Dialog widget to create a new jar
       },
     );
   }
@@ -48,20 +34,23 @@ class HeaderWidgetState extends State<HeaderWidget> {
   @override
   Widget build(BuildContext context) {
     return Stack(
-      alignment: Alignment.center,
+      alignment: Alignment.center, // Centers elements in the stack
       children: [
+        // Main row containing logo, add button, and search button
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            if (!_isSearching) const Logo(),
+            if (!_isSearching) const Logo(), // Display logo when not searching
             Row(
               children: [
+                // Button to open the add jar dialog
                 FunctionalityIcon(
                   icon: Icons.add,
-                  onPressed: _showAddJarDialog, // Add jar dialog functionality
+                  onPressed: _showAddJarDialog,
                 ),
+                // Button to toggle search bar visibility
                 IconButton(
-                  icon: Icon(Icons.search, color: AppColors.fonts),
+                  icon: const Icon(Icons.search, color: AppColors.fonts),
                   onPressed: () {
                     setState(() {
                       _isSearching = true;
@@ -72,57 +61,20 @@ class HeaderWidgetState extends State<HeaderWidget> {
             ),
           ],
         ),
+
+        // Display search bar when _isSearching is true
         if (_isSearching)
-          Positioned.fill(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              color: Colors
-                  .white, // Customize the background color of the search bar if needed
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      autofocus: true,
-                      style: TextStyle(color: AppColors.fonts),
-                      decoration: InputDecoration(
-                        hintText: 'Enter search query',
-                        hintStyle:
-                            TextStyle(color: AppColors.fonts.withOpacity(0.6)),
-                        filled: true,
-                        fillColor: AppColors
-                            .background, // Set your custom background color
-                        prefixIcon: IconButton(
-                          icon: Icon(Icons.arrow_back, color: AppColors.fonts),
-                          onPressed: () {
-                            setState(() {
-                              _isSearching = false;
-                            });
-                            widget.onSearchChanged(''); // Clear search input
-                          },
-                        ),
-                        suffixIcon: IconButton(
-                          icon: Icon(Icons.clear, color: AppColors.fonts),
-                          onPressed: () {
-                            _searchController.clear();
-                            widget.onSearchChanged(''); // Clear search input
-                          },
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20.0, vertical: 12.0),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(
-                              30), // Keep the original radius
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      onChanged: widget
-                          .onSearchChanged, // Notify parent of search changes
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          SearchBarPop(
+            onBackPressed: () {
+              setState(() {
+                _isSearching = false;
+              });
+              widget.onSearchChanged(''); // Clears search input
+            },
+            onClearPressed: () {
+              widget.onSearchChanged(''); // Clears search input
+            },
+            onSearchChanged: widget.onSearchChanged, // Updates search query
           ),
       ],
     );

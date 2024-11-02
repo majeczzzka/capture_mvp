@@ -5,16 +5,18 @@ import '../widgets/jar_grid.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../utils/app_colors.dart';
 
+/// The main screen of the app displaying a greeting, jar grid, and navigation bar.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  HomeScreenState createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  String _searchQuery = '';
+class HomeScreenState extends State<HomeScreen> {
+  String _searchQuery = ''; // Holds the current search query
 
+  /// Updates the search query and triggers UI refresh
   void _onSearchChanged(String query) {
     setState(() {
       _searchQuery = query;
@@ -24,13 +26,16 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.background, // Sets background color from theme
+
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        elevation: 0,
+        elevation: 0, // Removes shadow for a flat appearance
         toolbarHeight: 80,
-        title: const GreetingWidget(name: 'maja'),
+        title:
+            const GreetingWidget(name: 'maja'), // Personalized greeting widget
       ),
+
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
@@ -39,23 +44,28 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Container(
                 padding: const EdgeInsets.all(8.0),
                 decoration: BoxDecoration(
-                  color: AppColors.jarGridBackground,
-                  borderRadius: BorderRadius.circular(16),
+                  color: AppColors
+                      .jarGridBackground, // Background for jar grid container
+                  borderRadius:
+                      BorderRadius.circular(16), // Rounded container edges
                 ),
                 child: Column(
                   children: [
+                    // Header section with fixed height, including search functionality
                     SizedBox(
-                      height: 60, // Set a fixed height to prevent resizing
+                      height: 60,
                       child: HeaderWidget(
-                        onSearchChanged: _onSearchChanged,
+                        onSearchChanged:
+                            _onSearchChanged, // Passes search changes
                       ),
                     ),
                     const Divider(
                       thickness: 1,
                       color: AppColors.fonts,
                       indent: 8,
-                      endIndent: 8,
+                      endIndent: 8, // Styling for the divider line
                     ),
+                    // Main content area with jar grid, filtered by search query
                     Expanded(
                       child: JarGrid(searchQuery: _searchQuery),
                     ),
@@ -63,11 +73,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 16), // Spacing before the navigation bar
           ],
         ),
       ),
-      bottomNavigationBar: const BottomNavBar(),
+
+      bottomNavigationBar: const BottomNavBar(), // Bottom navigation bar widget
     );
   }
 }

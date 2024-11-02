@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 
+/// A model representing a jar with a title, color filter, and associated avatars.
 class Jar {
-  final String title;
-  final Color filterColor;
-  final List<String> images; // List of avatar image paths
+  final String title; // The title or name of the jar
+  final Color filterColor; // Color filter for styling the jar's appearance
+  final List<String>
+      images; // List of avatar image paths associated with the jar
 
+  /// Constructor for creating a [Jar] instance.
+  ///
+  /// Requires [title], [filterColor], and a list of [images].
   Jar({
     required this.title,
     required this.filterColor,
