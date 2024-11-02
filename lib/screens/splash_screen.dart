@@ -1,24 +1,23 @@
 // lib/screens/splash_screen.dart
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
-import 'home_screen.dart'; // Import the HomeScreen
+import '../app/capture_app.dart'; // Import CaptureApp
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  SplashScreenState createState() => SplashScreenState();
+  _SplashScreenState createState() => _SplashScreenState();
 }
 
-class SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Navigate to HomeScreen after a delay
     Future.delayed(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const CaptureApp()),
+        (Route<dynamic> route) => false, // Clears all previous routes
       );
     });
   }
@@ -29,7 +28,7 @@ class SplashScreenState extends State<SplashScreen> {
       backgroundColor: AppColors.background,
       body: Center(
         child: Image.asset(
-          'assets/images/splash.png', // Path to the logo image
+          'assets/images/splash.png', // Path to your logo image
           width: 200,
           height: 200,
         ),

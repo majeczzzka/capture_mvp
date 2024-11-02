@@ -1,13 +1,13 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
-import 'screens/splash_screen.dart'; // Import the SplashScreen
+import 'screens/splash_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const CaptureApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class CaptureApp extends StatelessWidget {
+  const CaptureApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const SplashScreen(), // Set SplashScreen as the initial screen
+      home: const SplashScreen(),
     );
   }
 }
