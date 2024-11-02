@@ -47,9 +47,9 @@ To get a local copy up and running, follow these steps.
    flutter run
 
 ### Usage
-Home Screen: Use the add button to create new jars and the search bar to filter jars.
-Bottom Navigation: Tap on icons to navigate between screens.
-Profile Screen: View and personalize user information.
+- Home Screen: Use the add button to create new jars and the search bar to filter jars.
+- Bottom Navigation: Tap on icons to navigate between screens.
+- Profile Screen: View and personalize user information.
 
 ### Project Structure
 
@@ -76,6 +76,6 @@ lib/
 ```
 
 ### Dependencies
-flutter: SDK for building natively compiled applications.
-Additional dependencies may be listed in pubspec.yaml.
+- flutter: SDK for building natively compiled applications.
+- Additional dependencies may be listed in pubspec.yaml.
 
