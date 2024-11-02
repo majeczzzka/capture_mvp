@@ -53,6 +53,7 @@ Profile Screen: View and personalize user information.
 
 ### Project Structure
 
+```bash
 lib/
 ├── main.dart                 # Main entry point of the app
 ├── models/
@@ -72,6 +73,7 @@ lib/
     ├── jar_item.dart         # Individual jar item in the grid
     ├── greeting_widget.dart  # Personalized greeting widget
     └── avatar_stack.dart     # Stack of avatars for jars
+```
 
 ### Dependencies
 flutter: SDK for building natively compiled applications.
