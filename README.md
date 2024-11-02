@@ -55,24 +55,31 @@ To get a local copy up and running, follow these steps.
 
 ```bash
 lib/
-├── main.dart                 # Main entry point of the app
+├── main.dart                 
 ├── models/
-│   └── jar_model.dart        # Data model for jars
+│   └── jar_model.dart       
 ├── screens/
-│   ├── home_screen.dart      # Home screen with jar grid
-│   ├── calendar_screen.dart  # Calendar screen
-│   ├── profile_screen.dart   # Profile screen
-│   └── jar_page.dart         # Detailed view of individual jars
+│   ├── home_screen.dart     
+│   ├── calendar_screen.dart  
+│   ├── profile_screen.dart  
+│   ├── splash_screen.dart  
+│   └── jar_page.dart        
+│   └── jar_creation_page.dart   
 ├── utils/
-│   └── app_colors.dart       # Color theme for the app
+│   └── app_colors.dart       
 └── widgets/
-    ├── bottom_nav_bar.dart   # Custom bottom navigation bar
-    ├── header_widget.dart    # Header with search and add functionalities
-    ├── search_bar.dart       # Custom search bar widget
-    ├── jar_grid.dart         # Grid view of jars
-    ├── jar_item.dart         # Individual jar item in the grid
-    ├── greeting_widget.dart  # Personalized greeting widget
-    └── avatar_stack.dart     # Stack of avatars for jars
+    ├── add_jar_dialog.dart 
+    ├── functionality_icon.dart 
+    ├── bottom_nav_bar.dart   
+    ├── logo.dart 
+    ├── search_bar.dart 
+    ├── header_widget.dart    
+    ├── search_bar.dart       
+    ├── jar_grid.dart        
+    ├── jar_item.dart         
+    ├── greeting_widget.dart  
+    └── avatar_stack.dart     
+
 ```
 
 ### Dependencies
