@@ -5,8 +5,21 @@ import '../widgets/jar_grid.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../utils/app_colors.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String _searchQuery = '';
+
+  void _onSearchChanged(String query) {
+    setState(() {
+      _searchQuery = query;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,13 +29,12 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         toolbarHeight: 80,
-        title: const GreetingWidget(name: 'maja'), // Use GreetingWidget here
+        title: const GreetingWidget(name: 'maja'),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
           children: [
-            // Container for header and jar grid
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(8.0),
@@ -32,18 +44,21 @@ class HomeScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    const SizedBox(
-                      height: 60, // Set fixed height for HeaderWidget
-                      child: HeaderWidget(), // Use HeaderWidget here
+                    SizedBox(
+                      height: 60, // Set a fixed height to prevent resizing
+                      child: HeaderWidget(
+                        onSearchChanged: _onSearchChanged,
+                      ),
                     ),
                     const Divider(
-                      thickness: 1, // Adjust the thickness
-                      color: AppColors
-                          .fonts, // Adjust the color to match your design
-                      indent: 8, // Add padding on the left side
-                      endIndent: 8, // Add padding on the right side
+                      thickness: 1,
+                      color: AppColors.fonts,
+                      indent: 8,
+                      endIndent: 8,
                     ),
-                    Expanded(child: JarGrid()), // Use the JarGrid widget here
+                    Expanded(
+                      child: JarGrid(searchQuery: _searchQuery),
+                    ),
                   ],
                 ),
               ),
@@ -52,7 +67,7 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: const BottomNavBar(), // Use BottomNavBar here
+      bottomNavigationBar: const BottomNavBar(),
     );
   }
 }

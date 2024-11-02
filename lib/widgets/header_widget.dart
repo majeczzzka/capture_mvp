@@ -4,44 +4,40 @@ import '../widgets/logo.dart';
 import '../utils/app_colors.dart';
 
 class HeaderWidget extends StatefulWidget {
-  const HeaderWidget({super.key});
+  final ValueChanged<String>
+      onSearchChanged; // Callback to notify search changes
+
+  const HeaderWidget({
+    super.key,
+    required this.onSearchChanged,
+  });
 
   @override
   HeaderWidgetState createState() => HeaderWidgetState();
 }
 
 class HeaderWidgetState extends State<HeaderWidget> {
-  bool _isSearching = false; // Toggle search bar visibility
+  bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
-  final TextEditingController _jarNameController =
-      TextEditingController(); // Controller for the jar name
 
   void _showAddJarDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Add a New Jar'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _jarNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Jar Name',
-                  hintText: 'Enter jar name',
-                ),
+          title: Text('Add a New Jar'),
+          content: TextField(
+            decoration: InputDecoration(
+              hintText: 'Enter jar name',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10.0),
               ),
-            ],
+            ),
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                _jarNameController.clear(); // Clear input field
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child:
-                  const Text('Back', style: TextStyle(color: AppColors.fonts)),
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Back', style: TextStyle(color: AppColors.fonts)),
             ),
           ],
         );
@@ -54,7 +50,6 @@ class HeaderWidgetState extends State<HeaderWidget> {
     return Stack(
       alignment: Alignment.center,
       children: [
-        // Main Row with Logo and Icons
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -63,10 +58,10 @@ class HeaderWidgetState extends State<HeaderWidget> {
               children: [
                 FunctionalityIcon(
                   icon: Icons.add,
-                  onPressed: _showAddJarDialog, // Show add jar dialog
+                  onPressed: _showAddJarDialog, // Add jar dialog functionality
                 ),
                 IconButton(
-                  icon: const Icon(Icons.search, color: AppColors.fonts),
+                  icon: Icon(Icons.search, color: AppColors.fonts),
                   onPressed: () {
                     setState(() {
                       _isSearching = true;
@@ -77,53 +72,52 @@ class HeaderWidgetState extends State<HeaderWidget> {
             ),
           ],
         ),
-        // Search Bar Overlay
         if (_isSearching)
           Positioned.fill(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              color: Colors.white, // Background color for the search bar
+              color: Colors
+                  .white, // Customize the background color of the search bar if needed
               child: Row(
                 children: [
                   Expanded(
-                    child: SearchBar(
+                    child: TextField(
                       controller: _searchController,
-                      hintText: 'Enter search query',
-                      leading: IconButton(
-                        icon: const Icon(Icons.arrow_back,
-                            color: AppColors.fonts),
-                        onPressed: () {
-                          setState(() {
-                            _isSearching = false;
-                          });
-                        },
-                      ),
-                      trailing: [
-                        IconButton(
-                          icon: const Icon(Icons.clear, color: AppColors.fonts),
+                      autofocus: true,
+                      style: TextStyle(color: AppColors.fonts),
+                      decoration: InputDecoration(
+                        hintText: 'Enter search query',
+                        hintStyle:
+                            TextStyle(color: AppColors.fonts.withOpacity(0.6)),
+                        filled: true,
+                        fillColor: AppColors
+                            .background, // Set your custom background color
+                        prefixIcon: IconButton(
+                          icon: Icon(Icons.arrow_back, color: AppColors.fonts),
                           onPressed: () {
-                            _searchController.clear(); // Clear search field
+                            setState(() {
+                              _isSearching = false;
+                            });
+                            widget.onSearchChanged(''); // Clear search input
                           },
                         ),
-                      ],
-                      onChanged: (query) {
-                        // Handle search input change
-                      },
-                      onSubmitted: (query) {
-                        // Handle search submission
-                      },
-                      backgroundColor:
-                          WidgetStateProperty.all(AppColors.background),
-                      elevation: WidgetStateProperty.all(0), // Flat style
-                      shape: WidgetStateProperty.all(
-                        RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                        suffixIcon: IconButton(
+                          icon: Icon(Icons.clear, color: AppColors.fonts),
+                          onPressed: () {
+                            _searchController.clear();
+                            widget.onSearchChanged(''); // Clear search input
+                          },
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20.0, vertical: 12.0),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                              30), // Keep the original radius
+                          borderSide: BorderSide.none,
                         ),
                       ),
-                      padding: WidgetStateProperty.all(
-                        const EdgeInsets.symmetric(horizontal: 8.0),
-                      ),
-                      autoFocus: true,
+                      onChanged: widget
+                          .onSearchChanged, // Notify parent of search changes
                     ),
                   ),
                 ],
