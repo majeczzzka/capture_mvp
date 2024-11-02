@@ -7,6 +7,7 @@ import '../utils/app_colors.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -15,7 +16,7 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         toolbarHeight: 80,
-        title: GreetingWidget(name: 'maja'), // Use GreetingWidget here
+        title: const GreetingWidget(name: 'maja'), // Use GreetingWidget here
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -31,7 +32,10 @@ class HomeScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    const HeaderWidget(), // Use HeaderWidget here
+                    const SizedBox(
+                      height: 60, // Set fixed height for HeaderWidget
+                      child: HeaderWidget(), // Use HeaderWidget here
+                    ),
                     const Divider(
                       thickness: 1, // Adjust the thickness
                       color: AppColors
