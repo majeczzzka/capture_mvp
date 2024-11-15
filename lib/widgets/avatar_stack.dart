@@ -7,7 +7,8 @@ class AvatarStack extends StatelessWidget {
   final double radius; // Radius of each avatar
   final double overlap; // Amount of overlap between avatars
 
-  AvatarStack({
+  const AvatarStack({
+    super.key,
     required this.images,
     this.radius = 13,
     this.overlap = 8,

@@ -1,3 +1,4 @@
+import 'package:capture_mvp/utils/app_shadows.dart';
 import 'package:flutter/material.dart';
 import '../widgets/greeting_widget.dart';
 import '../widgets/header_widget.dart';
@@ -34,6 +35,14 @@ class HomeScreenState extends State<HomeScreen> {
         toolbarHeight: 80,
         title:
             const GreetingWidget(name: 'maja'), // Personalized greeting widget
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+              )
+            : null, // Back button only appears when not on the home screen
       ),
 
       body: Padding(
@@ -44,11 +53,12 @@ class HomeScreenState extends State<HomeScreen> {
               child: Container(
                 padding: const EdgeInsets.all(8.0),
                 decoration: BoxDecoration(
-                  color: AppColors
-                      .jarGridBackground, // Background for jar grid container
-                  borderRadius:
-                      BorderRadius.circular(16), // Rounded container edges
-                ),
+                    color: AppColors
+                        .jarGridBackground, // Background for jar grid container
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow:
+                        AppShadows.subtleShadowList // Rounded container edges
+                    ),
                 child: Column(
                   children: [
                     // Header section with fixed height, including search functionality
