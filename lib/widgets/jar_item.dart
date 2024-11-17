@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/jar_model.dart';
 import 'avatar_stack.dart';
-import '../screens/jar_page.dart'; // Import the new JarPage screen
+import '../screens/jar_page.dart';
 
 class JarItem extends StatelessWidget {
   final Jar jar;
@@ -12,40 +12,34 @@ class JarItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        // Navigate to the JarPage when the jar is tapped
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => JarPage(jar: jar),
+            builder: (context) => JarPage(
+              jarTitle: jar.title,
+              contributorAvatars: jar.images,
+              jarColor: jar.filterColor,
+              jarImage: jar.jarImage,
+            ),
           ),
         );
       },
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              Image.asset(
-                'assets/images/jar.png',
-                width: 200,
-                height: 200,
-              ),
-              Positioned.fill(
-                child: ColorFiltered(
-                  colorFilter: ColorFilter.mode(
-                    jar.filterColor.withOpacity(0.3),
-                    BlendMode.modulate,
-                  ),
-                  child: Image.asset(
-                    'assets/images/jar.png',
-                    width: 200,
-                    height: 200,
-                  ),
-                ),
-              ),
-            ],
+          // Jar Image with Color Filter
+          ColorFiltered(
+            colorFilter: ColorFilter.mode(
+              jar.filterColor.withOpacity(0.7),
+              BlendMode.modulate,
+            ),
+            child: Image.asset(
+              jar.jarImage,
+              width: 200,
+              height: 200,
+            ),
           ),
+          // Title Text on Jar
           Positioned(
             top: 100,
             child: Text(
@@ -53,9 +47,19 @@ class JarItem extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.black54,
                 fontSize: 20,
+                shadows: [
+                  Shadow(
+                    offset:
+                        Offset(1, 1), // Slight horizontal and vertical offset
+                    blurRadius: 2.0, // Blur effect for the shadow
+                    color:
+                        Colors.black26, // Shadow color with some transparency
+                  ),
+                ],
               ),
             ),
           ),
+          // Contributor Avatars (using AvatarStack)
           Positioned(
             top: 130,
             child: AvatarStack(

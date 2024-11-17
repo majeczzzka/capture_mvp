@@ -12,27 +12,30 @@ class JarGrid extends StatelessWidget {
   final List<Jar> jars = [
     Jar(
       title: 'our story',
-      filterColor: Colors.purpleAccent,
+      filterColor: const Color.fromARGB(255, 224, 114, 243),
       images: [
         'assets/images/profile_picture.jpg',
         'assets/images/profile_picture.jpg',
       ],
+      jarImage: 'assets/images/jar.png',
     ),
     Jar(
       title: 'room 314',
-      filterColor: const Color.fromARGB(255, 136, 240, 105),
+      filterColor: const Color.fromARGB(255, 182, 248, 138),
       images: [
         'assets/images/profile_picture.jpg',
       ],
+      jarImage: 'assets/images/jar.png',
     ),
     Jar(
       title: 'the trio',
-      filterColor: const Color.fromARGB(255, 240, 161, 34),
+      filterColor: const Color.fromARGB(255, 255, 215, 134),
       images: [
         'assets/images/profile_picture.jpg',
         'assets/images/profile_picture.jpg',
         'assets/images/profile_picture.jpg',
       ],
+      jarImage: 'assets/images/jar.png',
     ),
   ];
 
