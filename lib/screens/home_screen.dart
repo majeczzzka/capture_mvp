@@ -35,14 +35,7 @@ class HomeScreenState extends State<HomeScreen> {
         toolbarHeight: 80,
         title:
             const GreetingWidget(name: 'maja'), // Personalized greeting widget
-        leading: Navigator.canPop(context)
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-              )
-            : null, // Back button only appears when not on the home screen
+        leading: null, // Back button only appears when not on the home screen
       ),
 
       body: Padding(

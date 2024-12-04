@@ -1,3 +1,4 @@
+import 'package:capture_mvp/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../models/jar_model.dart';
 import 'avatar_stack.dart';
@@ -10,6 +11,12 @@ class JarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final darkerColor = Color.fromARGB(
+      jar.filterColor.alpha, // Keep the same alpha
+      (jar.filterColor.red * 0.7).toInt(), // Reduce red by 20%
+      (jar.filterColor.green * 0.7).toInt(), // Reduce green by 20%
+      (jar.filterColor.blue * 0.7).toInt(), // Reduce blue by 20%
+    );
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -44,18 +51,10 @@ class JarItem extends StatelessWidget {
             top: 100,
             child: Text(
               jar.title,
-              style: const TextStyle(
-                color: Colors.black54,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: darkerColor,
                 fontSize: 20,
-                shadows: [
-                  Shadow(
-                    offset:
-                        Offset(1, 1), // Slight horizontal and vertical offset
-                    blurRadius: 2.0, // Blur effect for the shadow
-                    color:
-                        Colors.black26, // Shadow color with some transparency
-                  ),
-                ],
               ),
             ),
           ),
