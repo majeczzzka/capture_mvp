@@ -1,7 +1,6 @@
-// lib/screens/splash_screen.dart
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
-import '../app/capture_app.dart'; // Import CaptureApp
+import 'package:capture_mvp/main.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,9 +15,9 @@ class SplashScreenState extends State<SplashScreen> {
     super.initState();
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const CaptureApp()),
-          (Route<dynamic> route) => false, // Clears all previous routes
+        print("Navigating to CaptureApp");
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const AuthWrapper()),
         );
       }
     });
@@ -30,7 +29,7 @@ class SplashScreenState extends State<SplashScreen> {
       backgroundColor: AppColors.background,
       body: Center(
         child: Image.asset(
-          'assets/images/splash.png', // Path to your logo image
+          'assets/images/splash.png', // Path to your splash logo
           width: 200,
           height: 200,
         ),
