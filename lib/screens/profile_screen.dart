@@ -9,7 +9,7 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AuthService _authService = AuthService(); // Initialize AuthService
+    final AuthService authService = AuthService(); // Initialize AuthService
 
     return Scaffold(
       appBar: AppBar(
@@ -19,7 +19,7 @@ class ProfileScreen extends StatelessWidget {
             icon: const Icon(Icons.logout), // Logout icon
             onPressed: () async {
               try {
-                await _authService.signOut(); // Call the logout method
+                await authService.signOut(); // Call the logout method
                 // Navigate to the login screen after logout
                 Navigator.pushReplacementNamed(context, '/login');
               } catch (e) {

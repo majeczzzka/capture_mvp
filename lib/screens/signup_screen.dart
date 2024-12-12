@@ -189,12 +189,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 onPressed: () {
                   Navigator.pushReplacementNamed(context, '/login');
                 },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.fonts,
+                ),
                 child: const Text(
                   'Already have an account? Log in',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                ),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.fonts,
                 ),
               ),
             ],

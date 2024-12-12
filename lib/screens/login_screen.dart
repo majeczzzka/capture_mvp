@@ -128,12 +128,12 @@ class LoginScreenState extends State<LoginScreen> {
               onPressed: () {
                 Navigator.pushNamed(context, '/signup');
               },
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.fonts, // Match app theme
+              ),
               child: const Text(
                 'Don\'t have an account? Sign Up',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-              ),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.fonts, // Match app theme
               ),
             ),
           ],
