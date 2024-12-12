@@ -1,4 +1,3 @@
-import 'package:capture_mvp/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../models/jar_model.dart';
 import 'avatar_stack.dart';
@@ -6,17 +5,25 @@ import '../screens/jar_page.dart';
 
 class JarItem extends StatelessWidget {
   final Jar jar;
+  final String userId; // User ID required for jar-specific actions
+  final String jarId; // Jar ID required for unique identification
 
-  const JarItem({super.key, required this.jar});
+  const JarItem({
+    super.key,
+    required this.jar,
+    required this.userId,
+    required this.jarId,
+  });
 
   @override
   Widget build(BuildContext context) {
     final darkerColor = Color.fromARGB(
       jar.filterColor.alpha, // Keep the same alpha
-      (jar.filterColor.red * 0.7).toInt(), // Reduce red by 20%
-      (jar.filterColor.green * 0.7).toInt(), // Reduce green by 20%
-      (jar.filterColor.blue * 0.7).toInt(), // Reduce blue by 20%
+      (jar.filterColor.red * 0.7).toInt(), // Reduce red by 30%
+      (jar.filterColor.green * 0.7).toInt(), // Reduce green by 30%
+      (jar.filterColor.blue * 0.7).toInt(), // Reduce blue by 30%
     );
+
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -27,6 +34,8 @@ class JarItem extends StatelessWidget {
               contributorAvatars: jar.images,
               jarColor: jar.filterColor,
               jarImage: jar.jarImage,
+              userId: userId, // Pass userId to JarPage
+              jarId: jarId, // Pass jarId to JarPage
             ),
           ),
         );

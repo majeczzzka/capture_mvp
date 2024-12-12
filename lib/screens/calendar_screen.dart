@@ -1,7 +1,7 @@
+import 'package:capture_mvp/widgets/header_widget.dart';
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_shadows.dart';
-import '../widgets/header_widget.dart';
 import '../widgets/bottom_nav_bar.dart';
 
 class CalendarScreen extends StatelessWidget {
@@ -27,8 +27,9 @@ class CalendarScreen extends StatelessWidget {
       'date': DateTime(2023, 6, 12),
     },
   ];
+  final String userId;
 
-  CalendarScreen({super.key});
+  CalendarScreen({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context) {
@@ -76,8 +77,9 @@ class CalendarScreen extends StatelessWidget {
               SizedBox(
                 height: 60,
                 child: HeaderWidget(
+                  userId: userId,
                   onSearchChanged: (query) {
-                    print("Search query in calendar: $query");
+                    print("Search query: $query");
                   },
                 ),
               ),

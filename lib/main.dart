@@ -33,7 +33,13 @@ class CaptureApp extends StatelessWidget {
         '/login': (context) => LoginScreen(),
         '/signup': (context) => SignUpScreen(),
         '/home': (context) => const HomeScreen(),
-        '/calendar': (context) => CalendarScreen(),
+        '/calendar': (context) {
+          final user = FirebaseAuth.instance.currentUser;
+          if (user != null) {
+            return CalendarScreen(userId: user.uid);
+          }
+          return LoginScreen(); // Redirect to login if no user is found
+        },
         '/profile': (context) => const ProfileScreen(),
       },
     );

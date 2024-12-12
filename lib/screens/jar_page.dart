@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:capture_mvp/utils/app_colors.dart';
 import 'package:capture_mvp/utils/app_shadows.dart';
 import 'package:capture_mvp/widgets/bottom_nav_bar.dart';
-import 'package:capture_mvp/widgets/header_widget.dart';
+import 'package:capture_mvp/widgets/header_widget_jar.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'jar_content_page.dart';
 
 class JarPage extends StatelessWidget {
@@ -11,6 +12,8 @@ class JarPage extends StatelessWidget {
   final List<String> contributorAvatars;
   final Color jarColor;
   final String jarImage;
+  final String userId; // User ID for Firestore
+  final String jarId; // Jar ID for Firestore
 
   const JarPage({
     super.key,
@@ -18,7 +21,32 @@ class JarPage extends StatelessWidget {
     required this.contributorAvatars,
     required this.jarColor,
     required this.jarImage,
+    required this.userId,
+    required this.jarId,
   });
+
+  /// Deletes the current jar from Firestore
+  Future<void> _deleteJar(BuildContext context) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('jars')
+          .doc(jarId)
+          .delete();
+
+      // Navigate back after deletion
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Jar deleted successfully!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Failed to delete jar. Please try again.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +74,6 @@ class JarPage extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
           children: [
-            // Container with Header and Jar Details
             Flexible(
               child: Container(
                 padding: const EdgeInsets.all(16.0),
@@ -57,13 +84,15 @@ class JarPage extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    // Header Widget
                     SizedBox(
                       height: 60,
-                      child: HeaderWidget(
+                      child: HeaderWidgetJar(
                         onSearchChanged: (query) {
                           print("Searching in JarPage for: $query");
                         },
+                        userId: userId,
+                        jarId: jarId,
+                        onDeletePressed: () => _deleteJar(context),
                       ),
                     ),
                     const Divider(
@@ -73,22 +102,19 @@ class JarPage extends StatelessWidget {
                       endIndent: 8,
                     ),
                     const SizedBox(height: 32),
-                    // Jar Display Section with InkWell for Navigation
                     InkWell(
                       onTap: () {
-                        // Navigate to JarContentPage
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => JarContentPage(
                               jarTitle: jarTitle,
+                              userId: userId,
+                              jarId: jarId,
                               contents: [
                                 {'type': 'note', 'data': 'Sample Note 1'},
-                                {'type': 'video', 'data': ''}, // Placeholder
-                                {'type': 'photo', 'data': 'Sample Photo'},
-                                {'type': 'note', 'data': 'Sample Note 2'},
                                 {'type': 'video', 'data': ''},
-                                {'type': 'photo', 'data': 'Sample Photo 2'},
+                                {'type': 'photo', 'data': 'Sample Photo'},
                               ],
                             ),
                           ),
@@ -104,11 +130,10 @@ class JarPage extends StatelessWidget {
                             ),
                             child: Image.asset(
                               jarImage,
-                              width: 250, // Slightly smaller jar size
+                              width: 250,
                               height: 250,
                             ),
                           ),
-                          // Jar Title
                           Positioned(
                             top: 110,
                             child: Text(
@@ -120,7 +145,6 @@ class JarPage extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // Contributor Avatars
                           Positioned(
                             top: 145,
                             child: AvatarStack(

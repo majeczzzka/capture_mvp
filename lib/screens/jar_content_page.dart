@@ -1,16 +1,20 @@
+import 'package:capture_mvp/widgets/header_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:capture_mvp/utils/app_shadows.dart';
 import '../utils/app_colors.dart';
-import '../widgets/header_widget.dart';
 import '../widgets/bottom_nav_bar.dart';
 
 class JarContentPage extends StatelessWidget {
   final String jarTitle;
+  final String userId; // Added userId for HeaderWidgetJar
+  final String jarId; // Added jarId for HeaderWidgetJar
   final List<Map<String, String>> contents;
 
   const JarContentPage({
     super.key,
     required this.jarTitle,
+    required this.userId,
+    required this.jarId,
     required this.contents,
   });
 
@@ -47,6 +51,7 @@ class JarContentPage extends StatelessWidget {
                     SizedBox(
                       height: 60,
                       child: HeaderWidget(
+                        userId: userId, // Pass the userId
                         onSearchChanged: (query) {
                           print("Search query: $query");
                         },

@@ -1,76 +1,100 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'jar_item.dart';
 import '../models/jar_model.dart';
 
-/// A grid widget that displays a list of jars, filtered by a search query.
+/// A grid widget that displays a list of jars fetched from Firestore, filtered by a search query.
 class JarGrid extends StatelessWidget {
   final String searchQuery; // Search query to filter jars by title
+  final String userId; // User ID to fetch jars for a specific user
 
-  JarGrid({super.key, required this.searchQuery});
-
-  // Sample data representing jars with titles, colors, and images
-  final List<Jar> jars = [
-    Jar(
-      title: 'our story',
-      filterColor: const Color.fromARGB(255, 224, 114, 243),
-      images: [
-        'assets/images/profile_picture.jpg',
-        'assets/images/profile_picture.jpg',
-      ],
-      jarImage: 'assets/images/jar.png',
-    ),
-    Jar(
-      title: 'room 314',
-      filterColor: const Color.fromARGB(255, 182, 248, 138),
-      images: [
-        'assets/images/profile_picture.jpg',
-      ],
-      jarImage: 'assets/images/jar.png',
-    ),
-    Jar(
-      title: 'the trio',
-      filterColor: const Color.fromARGB(255, 255, 215, 134),
-      images: [
-        'assets/images/profile_picture.jpg',
-        'assets/images/profile_picture.jpg',
-        'assets/images/profile_picture.jpg',
-      ],
-      jarImage: 'assets/images/jar.png',
-    ),
-  ];
+  const JarGrid({
+    super.key,
+    required this.searchQuery,
+    required this.userId,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Filter jars by checking if the title contains the search query (case-insensitive)
-    final filteredJars = jars
-        .where((jar) =>
-            jar.title.toLowerCase().contains(searchQuery.toLowerCase()))
-        .toList();
+    // Fetch jars from Firestore in real-time for the specified user
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users') // Reference to users collection
+          .doc(userId) // Reference to the specific user document
+          .collection('jars') // Reference to the jars subcollection
+          .snapshots(), // Real-time snapshot stream
+      builder: (context, snapshot) {
+        // Handle loading state
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
 
-    // If no jars match the search query, display a centered message
-    if (filteredJars.isEmpty) {
-      return const Center(
-        child: Text(
-          'No matching jars',
-          style: TextStyle(fontSize: 16, color: Colors.grey),
-        ),
-      );
-    }
+        // Handle errors
+        if (snapshot.hasError) {
+          return const Center(
+            child: Text(
+              'Failed to load jars',
+              style: TextStyle(fontSize: 16, color: Colors.red),
+            ),
+          );
+        }
 
-    // Display a grid of jars that match the search query
-    return GridView.builder(
-      padding: const EdgeInsets.all(8.0), // Padding around the grid
-      itemCount: filteredJars.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, // Two columns in the grid
-        mainAxisSpacing: 10, // Vertical spacing between grid items
-        crossAxisSpacing: 10, // Horizontal spacing between grid items
-        childAspectRatio:
-            0.7, // Aspect ratio to control item height relative to width
-      ),
-      itemBuilder: (context, index) {
-        return JarItem(
-            jar: filteredJars[index]); // Displays each filtered jar item
+        // Extract jar data from Firestore documents
+        final jarDocs = snapshot.data?.docs ?? [];
+
+        // Filter jars by search query (case-insensitive)
+        final filteredJars = jarDocs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final jarName = data['name'] ?? 'Untitled Jar';
+          return jarName.toLowerCase().contains(searchQuery.toLowerCase());
+        }).toList();
+
+        // Handle empty state
+        if (filteredJars.isEmpty) {
+          return const Center(
+            child: Text(
+              'No matching jars',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          );
+        }
+
+        // Display a grid of filtered jars
+        return GridView.builder(
+          padding: const EdgeInsets.all(8.0),
+          itemCount: filteredJars.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 0.7,
+          ),
+          itemBuilder: (context, index) {
+            final doc = filteredJars[index];
+            final data = doc.data() as Map<String, dynamic>;
+
+            // Map Firestore data to Jar object
+            final jar = Jar(
+              title: data['name'] ?? 'Untitled Jar',
+              filterColor:
+                  Color(int.parse(data['color'].replaceFirst('#', '0xFF'))),
+              images: [
+                'assets/images/profile_picture.jpg', // Placeholder profile pictures
+                'assets/images/profile_picture.jpg',
+              ],
+              jarImage: 'assets/images/jar.png', // Placeholder jar image
+            );
+
+            // Pass all required arguments to JarItem
+            return JarItem(
+              jar: jar,
+              userId: userId,
+              jarId: doc.id, // Use Firestore document ID as jarId
+            );
+          },
+        );
       },
     );
   }

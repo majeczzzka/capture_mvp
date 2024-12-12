@@ -8,10 +8,12 @@ import '../utils/app_colors.dart';
 /// A header widget displaying the app logo, add button, and search functionality.
 class HeaderWidget extends StatefulWidget {
   final ValueChanged<String> onSearchChanged; // Callback to update search query
+  final String userId;
 
   const HeaderWidget({
     super.key,
     required this.onSearchChanged,
+    required this.userId,
   });
 
   @override
@@ -26,7 +28,9 @@ class HeaderWidgetState extends State<HeaderWidget> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return const AddJarDialog(); // Dialog widget to create a new jar
+        return AddJarDialog(
+          userId: widget.userId, // Pass userId to the AddJarDialog
+        );
       },
     );
   }

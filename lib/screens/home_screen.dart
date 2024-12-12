@@ -22,34 +22,43 @@ class HomeScreenState extends State<HomeScreen> {
 
   String _searchQuery = ''; // Holds the current search query
   String? _username; // Holds the fetched username
-  bool _isLoading = true; // Loading state for fetching username
+  String? _userId; // Holds the current user's ID
+  bool _isLoading = true; // Loading state for fetching user data
 
   @override
   void initState() {
     super.initState();
-    _fetchUsername(); // Fetch username on screen load
+    _initializeUser(); // Initialize user data on screen load
   }
 
-  /// Fetches the username for the logged-in user from Firestore.
-  Future<void> _fetchUsername() async {
+  /// Initializes user data by fetching the user ID and username.
+  Future<void> _initializeUser() async {
     try {
       final uid = _auth.currentUser?.uid;
       if (uid != null) {
         final doc = await _firestore.collection('users').doc(uid).get();
         setState(() {
+          _userId = uid;
           _username = doc.data()?['username'] ?? 'User';
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _userId = null;
+          _username = 'User';
           _isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
+        _userId = null;
         _username = 'User';
         _isLoading = false;
       });
     }
   }
 
-  /// Updates the search query and triggers UI refresh
+  /// Updates the search query and triggers UI refresh.
   void _onSearchChanged(String query) {
     setState(() {
       _searchQuery = query;
@@ -59,11 +68,24 @@ class HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      // Show loading spinner while fetching username
+      // Show loading spinner while fetching user data
       return const Scaffold(
         backgroundColor: AppColors.background,
         body: Center(
           child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_userId == null) {
+      // Handle cases where the user ID is not available
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Text(
+            'Error: Unable to load user data.',
+            style: TextStyle(fontSize: 16, color: Colors.red),
+          ),
         ),
       );
     }
@@ -104,6 +126,7 @@ class HomeScreenState extends State<HomeScreen> {
                       child: HeaderWidget(
                         onSearchChanged:
                             _onSearchChanged, // Passes search changes
+                        userId: _userId!, // Pass the userId dynamically
                       ),
                     ),
                     const Divider(
@@ -114,7 +137,10 @@ class HomeScreenState extends State<HomeScreen> {
                     ),
                     // Main content area with jar grid, filtered by search query
                     Expanded(
-                      child: JarGrid(searchQuery: _searchQuery),
+                      child: JarGrid(
+                        searchQuery: _searchQuery,
+                        userId: _userId!, // Pass the userId dynamically
+                      ),
                     ),
                   ],
                 ),
