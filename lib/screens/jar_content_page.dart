@@ -108,23 +108,25 @@ class JarContentPage extends StatelessWidget {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  if (content['type'] == 'image')
-                                    Image.asset(
-                                      content['data']!,
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.cover,
-                                    )
-                                  else
-                                    Icon(
-                                      content['type'] == 'video'
-                                          ? Icons.videocam
-                                          : content['type'] == 'note'
-                                              ? Icons.notes
-                                              : Icons.mic,
-                                      size: 50,
-                                      color: Colors.grey,
-                                    ),
+                                  Icon(
+                                    content['type'] == 'video'
+                                        ? Icons.videocam
+                                        : content['type'] == 'note'
+                                            ? Icons.notes
+                                            : content['type'] == 'photo'
+                                                ? Icons.photo
+                                                : content['type'] ==
+                                                        'voice note'
+                                                    ? Icons.mic
+                                                    : content['type'] ==
+                                                            'template'
+                                                        ? Icons
+                                                            .format_paint // Add this case
+                                                        : Icons
+                                                            .error, // Fallback for unknown types
+                                    size: 50,
+                                    color: Colors.grey,
+                                  ),
                                   const SizedBox(height: 8),
                                   Text(
                                     content['type']!.toUpperCase(),

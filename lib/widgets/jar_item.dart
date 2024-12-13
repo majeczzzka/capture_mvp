@@ -58,20 +58,28 @@ class JarItem extends StatelessWidget {
           // Title Text on Jar
           Positioned(
             top: 100,
-            child: Text(
-              jar.title,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: darkerColor,
-                fontSize: 20,
+            child: SizedBox(
+              width: 100, // Width of the jar image
+              child: Text(
+                jar.title,
+                maxLines: 1, // Restrict to a single line
+                overflow:
+                    TextOverflow.ellipsis, // Add ellipsis if text overflows
+                textAlign: TextAlign.center, // Center-align text
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: darkerColor,
+                  fontSize: 20,
+                ),
               ),
             ),
           ),
+
           // Contributor Avatars (using AvatarStack)
           Positioned(
             top: 130,
             child: AvatarStack(
-              images: jar.images,
+              avatars: jar.images,
               radius: 13,
               overlap: 10,
             ),

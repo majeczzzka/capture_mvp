@@ -9,7 +9,7 @@ import 'jar_content_page.dart';
 
 class JarPage extends StatelessWidget {
   final String jarTitle;
-  final List<String> contributorAvatars;
+  final List<Widget> contributorAvatars;
   final Color jarColor;
   final String jarImage;
   final String userId; // User ID for Firestore
@@ -136,19 +136,27 @@ class JarPage extends StatelessWidget {
                           ),
                           Positioned(
                             top: 110,
-                            child: Text(
-                              jarTitle,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: darkerColor,
-                                fontSize: 25,
+                            child: SizedBox(
+                              width: 120, // Width of the jar image
+                              child: Text(
+                                jarTitle,
+                                maxLines: 1, // Restrict to a single line
+                                overflow: TextOverflow
+                                    .ellipsis, // Add ellipsis if text overflows
+                                textAlign:
+                                    TextAlign.center, // Center-align text
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: darkerColor,
+                                  fontSize: 25,
+                                ),
                               ),
                             ),
                           ),
                           Positioned(
                             top: 145,
                             child: AvatarStack(
-                              images: contributorAvatars,
+                              avatars: contributorAvatars,
                               radius: 18,
                               overlap: 10,
                             ),
@@ -167,25 +175,16 @@ class JarPage extends StatelessWidget {
                               context,
                               Icons.edit,
                               "Note",
-                              onTap: () {
-                                print("Add Note tapped");
-                              },
                             ),
                             _buildIconColumn(
                               context,
                               Icons.videocam,
                               "Video",
-                              onTap: () {
-                                print("Add Video tapped");
-                              },
                             ),
                             _buildIconColumn(
                               context,
                               Icons.photo,
                               "Photo",
-                              onTap: () {
-                                print("Add Photo tapped");
-                              },
                             ),
                           ],
                         ),
@@ -196,19 +195,13 @@ class JarPage extends StatelessWidget {
                             _buildIconColumn(
                               context,
                               Icons.mic,
-                              "Voice",
-                              onTap: () {
-                                print("Add Voice tapped");
-                              },
+                              "Voice Note",
                             ),
                             const SizedBox(width: 24),
                             _buildIconColumn(
                               context,
                               Icons.format_paint,
-                              "Templates",
-                              onTap: () {
-                                print("Add Templates tapped");
-                              },
+                              "Template",
                             ),
                           ],
                         ),
@@ -226,17 +219,79 @@ class JarPage extends StatelessWidget {
     );
   }
 
-  // Helper for Icons with Labels
   Widget _buildIconColumn(
     BuildContext context,
     IconData icon,
-    String label, {
-    required VoidCallback onTap,
-  }) {
+    String label, // Use the label for both display and content type
+  ) {
     return InkWell(
-      onTap: onTap,
+      onTap: () async {
+        // Show the popup dialog to select a date
+        DateTime? selectedDate = await showDialog<DateTime>(
+          context: context,
+          builder: (context) {
+            DateTime? tempSelectedDate = DateTime.now();
+            return AlertDialog(
+              title: Text('Select Date for $label'),
+              content: SizedBox(
+                height: 400, // Increased height for better layout
+                width: 300, // Ensure the dialog has enough width
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: CalendarDatePicker(
+                        initialDate: tempSelectedDate!,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                        onDateChanged: (date) {
+                          tempSelectedDate = date;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // Close without saving
+                  },
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context, tempSelectedDate); // Save and close
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+
+        if (selectedDate != null) {
+          // Save the selected date to Firestore
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .collection('jars')
+              .doc(jarId)
+              .update({
+            'content': FieldValue.arrayUnion([
+              {
+                'type':
+                    label.toLowerCase(), // Use the label for the content type
+                'icon': icon.toString(), // Save the icon as a string
+                'data': 'Sample $label content', // Placeholder content
+                'date':
+                    selectedDate.toIso8601String(), // Save the selected date
+              },
+            ])
+          });
+        }
+      },
       borderRadius: BorderRadius.circular(8),
-      splashColor: AppColors.selectedFonts.withOpacity(0.3),
+      splashColor: Colors.grey.withOpacity(0.3),
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(

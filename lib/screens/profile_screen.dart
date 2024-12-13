@@ -1,43 +1,84 @@
-import 'package:capture_mvp/utils/app_colors.dart';
-import 'package:capture_mvp/services/auth_service.dart'; // Import the AuthService
 import 'package:flutter/material.dart';
-import '../widgets/bottom_nav_bar.dart'; // Import the BottomNavBar
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/app_colors.dart';
+import '../utils/app_shadows.dart';
+import '../widgets/bottom_nav_bar.dart';
+import '../widgets/greeting_widget.dart';
 
-/// A simple screen displaying the user's profile view.
+/// ProfileScreen displays the user's profile with an avatar and greeting.
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  final String userId; // User ID for fetching user data
+
+  ProfileScreen({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context) {
-    final AuthService authService = AuthService(); // Initialize AuthService
-
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Profile View'), // Title displayed in the app bar
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout), // Logout icon
-            onPressed: () async {
-              try {
-                await authService.signOut(); // Call the logout method
-                // Navigate to the login screen after logout
-                Navigator.pushReplacementNamed(context, '/login');
-              } catch (e) {
-                // Handle logout error
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error logging out: ${e.toString()}')),
-                );
-              }
-            },
-          ),
-        ],
+        centerTitle: true,
+        title: const Text('Profile', style: TextStyle(color: AppColors.fonts)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        toolbarHeight: 80,
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: AppColors.fonts),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+              )
+            : null,
       ),
-      body: const Center(
-        child: Text('Hey, this is a profile view'), // Main content message
-      ),
-      backgroundColor: AppColors.background, // Sets background color from theme
+      body: Center(
+        // Center the entire content
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Column(
+            mainAxisSize:
+                MainAxisSize.min, // Take up only required vertical space
+            children: [
+              StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(userId) // Fetch user document by ID
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
 
-      // Adds the BottomNavBar to the screen
+                  if (snapshot.hasError || !snapshot.hasData) {
+                    return const Center(
+                      child: Text(
+                        'Failed to load profile',
+                        style: TextStyle(color: Colors.red, fontSize: 16),
+                      ),
+                    );
+                  }
+
+                  // Extract user data
+                  final userData =
+                      snapshot.data?.data() as Map<String, dynamic>?;
+                  final username =
+                      userData?['username'] ?? 'User'; // Fallback to 'User'
+
+                  // Use GreetingWidget here
+                  return GreetingWidget(
+                    name: username,
+                    userId: userId, // Pass userId to GreetingWidget
+                  );
+                },
+              ),
+
+              const SizedBox(
+                  height: 8), // Add space between the container and the bottom
+            ],
+          ),
+        ),
+      ),
       bottomNavigationBar: const BottomNavBar(),
     );
   }

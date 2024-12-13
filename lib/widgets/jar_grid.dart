@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:random_avatar/random_avatar.dart';
 import 'jar_item.dart';
 import '../models/jar_model.dart';
 
@@ -76,13 +77,27 @@ class JarGrid extends StatelessWidget {
             final data = doc.data() as Map<String, dynamic>;
 
             // Map Firestore data to Jar object
+            final collaborators =
+                (data['collaborators'] as List<dynamic>? ?? [])
+                    .map((collaboratorId) => RandomAvatar(
+                          collaboratorId.hashCode
+                              .toString(), // Ensure consistent identifier
+                          height: 20,
+                          width: 20,
+                        ))
+                    .toList();
+
             final jar = Jar(
               title: data['name'] ?? 'Untitled Jar',
               filterColor:
                   Color(int.parse(data['color'].replaceFirst('#', '0xFF'))),
               images: [
-                'assets/images/profile_picture.jpg', // Placeholder profile pictures
-                'assets/images/profile_picture.jpg',
+                RandomAvatar(
+                  userId.hashCode.toString(), // Consistent owner identifier
+                  height: 20,
+                  width: 20,
+                ),
+                ...collaborators, // Add collaborators' avatars
               ],
               jarImage: 'assets/images/jar.png', // Placeholder jar image
             );

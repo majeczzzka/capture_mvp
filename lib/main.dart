@@ -40,7 +40,15 @@ class CaptureApp extends StatelessWidget {
           }
           return LoginScreen(); // Redirect to login if no user is found
         },
-        '/profile': (context) => const ProfileScreen(),
+        '/profile': (context) {
+          final user = FirebaseAuth.instance.currentUser;
+          if (user != null) {
+            return ProfileScreen(
+              userId: user.uid,
+            );
+          }
+          return LoginScreen();
+        },
       },
     );
   }

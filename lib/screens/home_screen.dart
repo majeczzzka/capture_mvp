@@ -100,6 +100,7 @@ class HomeScreenState extends State<HomeScreen> {
         automaticallyImplyLeading: false, // Ensures no back button is shown
         title: GreetingWidget(
           name: _username ?? 'User', // Pass the fetched username
+          userId: _userId!, // Pass the userId dynamically
         ), // Personalized greeting widget
         leading: null, // Explicitly ensure no leading widget
       ),

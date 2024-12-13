@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:random_avatar/random_avatar.dart';
 import '../utils/app_colors.dart';
 
 /// A widget that displays a greeting message with an avatar.
 class GreetingWidget extends StatelessWidget {
   final String name; // Name of the user to greet
+  final String userId; // User ID for avatar generation
 
-  const GreetingWidget({super.key, required this.name});
+  const GreetingWidget({
+    super.key,
+    required this.name,
+    required this.userId, // Add userId as a required parameter
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +22,7 @@ class GreetingWidget extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min, // Row takes minimum horizontal space
           children: [
-            // Circular avatar with border
+            // SVG avatar with border
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -25,10 +31,13 @@ class GreetingWidget extends StatelessWidget {
                   width: 2.0, // Border thickness
                 ),
               ),
-              child: const CircleAvatar(
-                radius: 20, // Size of the avatar
-                backgroundImage: AssetImage(
-                    'assets/images/profile_picture.jpg'), // Avatar image
+              child: ClipOval(
+                child: RandomAvatar(
+                  userId.hashCode
+                      .toString(), // Use userId for avatar generation
+                  height: 40, // Avatar height
+                  width: 40, // Avatar width
+                ),
               ),
             ),
             const SizedBox(width: 8), // Space between avatar and greeting text

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 
-/// A widget that displays a stack of overlapping avatar images.
+/// A widget that displays a stack of overlapping avatar widgets.
 class AvatarStack extends StatelessWidget {
-  final List<String> images; // List of image paths for the avatars
+  final List<Widget> avatars; // List of avatar widgets
   final double radius; // Radius of each avatar
   final double overlap; // Amount of overlap between avatars
 
   const AvatarStack({
     super.key,
-    required this.images,
+    required this.avatars,
     this.radius = 13,
     this.overlap = 8,
   });
@@ -17,15 +17,15 @@ class AvatarStack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      // Calculate total width based on the number of images, overlap, and radius
-      width: (images.length) * overlap + 2 * radius,
+      // Calculate total width based on the number of avatars, overlap, and radius
+      width: (avatars.length) * overlap + 2 * radius,
       height: 3 * radius, // Adjust height to fit the avatars
 
       // Stack to layer avatars on top of each other with overlap
       child: Stack(
-        children: images.asMap().entries.map((entry) {
+        children: avatars.asMap().entries.map((entry) {
           int index = entry.key;
-          String image = entry.value;
+          Widget avatar = entry.value;
 
           return Positioned(
             left: index * overlap, // Position each avatar with overlap
@@ -37,9 +37,12 @@ class AvatarStack extends StatelessWidget {
                   width: 2.0, // Border thickness
                 ),
               ),
-              child: CircleAvatar(
-                radius: radius, // Set avatar radius
-                backgroundImage: AssetImage(image), // Display the image
+              child: ClipOval(
+                child: SizedBox(
+                  width: 2 * radius,
+                  height: 2 * radius,
+                  child: avatar, // Use the provided avatar widget
+                ),
               ),
             ),
           );
