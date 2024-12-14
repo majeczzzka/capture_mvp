@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../utils/app_colors.dart';
+import '../../utils/app_colors.dart';
 
+/// A dialog for adding a new jar to the user's collection.
 class AddJarDialog extends StatefulWidget {
   final String userId;
 
@@ -14,9 +15,10 @@ class AddJarDialog extends StatefulWidget {
 class _AddJarDialogState extends State<AddJarDialog> {
   final _jarNameController = TextEditingController();
   final _emailController = TextEditingController();
-  List<String> _collaboratorEmails = [];
+  final List<String> _collaboratorEmails = [];
   String _selectedColor = '#fbb4a5';
 
+  /// Saves the jar to the user's collection and collaborator collections.
   Future<void> _saveJar() async {
     if (_jarNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -28,6 +30,7 @@ class _AddJarDialogState extends State<AddJarDialog> {
       return;
     }
 
+    /// Check if the email is not empty
     if (_emailController.text.trim().isNotEmpty) {
       try {
         final querySnapshot = await FirebaseFirestore.instance
@@ -137,6 +140,7 @@ class _AddJarDialogState extends State<AddJarDialog> {
               ),
             ),
             const SizedBox(height: 16),
+            // Dropdown for selecting jar color
             DropdownButtonFormField<String>(
               value: _selectedColor,
               items: [
@@ -147,6 +151,7 @@ class _AddJarDialogState extends State<AddJarDialog> {
                 '#a5c8fb',
               ].map((color) {
                 return DropdownMenuItem(
+                  // Display color preview in dropdown
                   value: color,
                   child: Row(
                     children: [
@@ -187,6 +192,7 @@ class _AddJarDialogState extends State<AddJarDialog> {
               ),
             ),
             const SizedBox(height: 16),
+            // Collaborator email field
             TextField(
               controller: _emailController,
               decoration: InputDecoration(
@@ -206,6 +212,7 @@ class _AddJarDialogState extends State<AddJarDialog> {
         ),
       ),
       actions: [
+        // Cancel button and Save button
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:random_avatar/random_avatar.dart';
-import '../utils/app_colors.dart';
+import '../../utils/app_colors.dart';
 
 /// A widget that displays a greeting message with an avatar.
 class GreetingWidget extends StatelessWidget {
@@ -20,23 +20,22 @@ class GreetingWidget extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.only(top: 8),
         child: Row(
-          mainAxisSize: MainAxisSize.min, // Row takes minimum horizontal space
+          mainAxisSize: MainAxisSize.min,
           children: [
             // SVG avatar with border
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: AppColors.fonts, // Color of the border
-                  width: 2.0, // Border thickness
+                  color: AppColors.fonts,
+                  width: 2.0,
                 ),
               ),
               child: ClipOval(
                 child: RandomAvatar(
-                  userId.hashCode
-                      .toString(), // Use userId for avatar generation
-                  height: 40, // Avatar height
-                  width: 40, // Avatar width
+                  userId.hashCode.toString(),
+                  height: 40,
+                  width: 40,
                 ),
               ),
             ),

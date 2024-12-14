@@ -1,15 +1,17 @@
+import 'package:capture_mvp/widgets/auth/custom_text_form_field.dart';
+import 'package:capture_mvp/widgets/login/custom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:capture_mvp/services/auth_service.dart';
-import 'package:capture_mvp/utils/app_colors.dart';
 
+// A screen for signing up.
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
   @override
-  _SignUpScreenState createState() => _SignUpScreenState();
+  SignUpScreenState createState() => SignUpScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
+class SignUpScreenState extends State<SignUpScreen> {
   final AuthService _authService = AuthService();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -22,13 +24,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.white,
         title: const Text(
           'Sign Up',
           style: TextStyle(
-            color: AppColors.fonts,
+            color: Colors.black,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -43,20 +45,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              TextFormField(
+              CustomTextFormField(
                 controller: _usernameController,
-                decoration: InputDecoration(
-                  labelText: 'Username',
-                  labelStyle: TextStyle(color: AppColors.fonts),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.fonts, width: 1.5),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.fonts, width: 2.0),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
+                labelText: 'Username',
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a username';
@@ -65,21 +56,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              CustomTextFormField(
                 controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  labelStyle: TextStyle(color: AppColors.fonts),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.fonts, width: 1.5),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.fonts, width: 2.0),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
+                labelText: 'Email',
                 validator: (value) {
+                  // Check if the email is valid
                   if (value == null || value.isEmpty) {
                     return 'Please enter your email';
                   } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
@@ -89,22 +70,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              CustomTextFormField(
                 controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  labelStyle: TextStyle(color: AppColors.fonts),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.fonts, width: 1.5),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.fonts, width: 2.0),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
+                labelText: 'Password',
                 obscureText: true,
                 validator: (value) {
+                  // Check if the password is valid
                   if (value == null || value.isEmpty) {
                     return 'Please enter your password';
                   } else if (value.length < 6) {
@@ -114,20 +85,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              CustomTextFormField(
                 controller: _confirmPasswordController,
-                decoration: InputDecoration(
-                  labelText: 'Confirm Password',
-                  labelStyle: TextStyle(color: AppColors.fonts),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.fonts, width: 1.5),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.fonts, width: 2.0),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
+                labelText: 'Confirm Password',
                 obscureText: true,
                 validator: (value) {
                   if (value != _passwordController.text) {
@@ -137,25 +97,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 },
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.background,
-                  foregroundColor: AppColors.fonts,
-                  padding: const EdgeInsets.symmetric(vertical: 14.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
+              CustomButton(
+                label: 'Sign Up',
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
                     try {
-                      // Sign up with email and password
                       final user = await _authService.signUp(
                         _emailController.text.trim(),
                         _passwordController.text.trim(),
                       );
 
-                      // Store the username in the database
                       if (user != null) {
                         await _authService.saveUsername(
                           user.uid,
@@ -179,20 +130,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     }
                   }
                 },
-                child: const Text(
-                  'Sign Up',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
               ),
               const SizedBox(height: 20),
               TextButton(
                 onPressed: () {
                   Navigator.pushReplacementNamed(context, '/login');
                 },
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.fonts,
-                ),
+                style: TextButton.styleFrom(foregroundColor: Colors.black),
                 child: const Text(
+                  // Navigate to the login screen if the user already has an account
                   'Already have an account? Log in',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                 ),

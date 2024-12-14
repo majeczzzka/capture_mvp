@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/app_colors.dart';
-import '../utils/app_shadows.dart';
-import '../widgets/bottom_nav_bar.dart';
-import '../widgets/greeting_widget.dart';
+import '../widgets/nav/bottom_nav_bar.dart';
+import '../widgets/home/greeting_widget.dart';
 
 /// ProfileScreen displays the user's profile with an avatar and greeting.
 class ProfileScreen extends StatelessWidget {
   final String userId; // User ID for fetching user data
 
-  ProfileScreen({super.key, required this.userId});
+  const ProfileScreen({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context) {

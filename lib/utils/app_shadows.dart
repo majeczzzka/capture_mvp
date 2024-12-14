@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// App shadows
 class AppShadows {
   static final BoxShadow subtleShadow = BoxShadow(
     color: Colors.black.withOpacity(0.1), // Shadow color

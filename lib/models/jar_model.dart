@@ -8,9 +8,7 @@ class Jar {
       images; // List of avatar image paths associated with the jar
   final String jarImage; // Image path for the jar itself
 
-  /// Constructor for creating a [Jar] instance.
-  ///
-  /// Requires [title], [filterColor], and a list of [images].
+  /// Constructor for creating a jar instance
   Jar({
     required this.title,
     required this.filterColor,

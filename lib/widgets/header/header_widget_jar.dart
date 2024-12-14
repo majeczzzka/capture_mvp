@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../widgets/logo.dart';
-import '../utils/app_colors.dart';
+import 'logo.dart';
+import '../../utils/app_colors.dart';
 
 /// Header widget for a specific jar page, with search and delete functionality.
 class HeaderWidgetJar extends StatefulWidget {

@@ -1,12 +1,11 @@
-import 'package:capture_mvp/utils/app_shadows.dart';
 import 'package:flutter/material.dart';
-import '../widgets/greeting_widget.dart';
-import '../widgets/header_widget.dart';
-import '../widgets/jar_grid.dart';
-import '../widgets/bottom_nav_bar.dart';
 import '../utils/app_colors.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../widgets/nav/bottom_nav_bar.dart';
+import '../widgets/header/header_widget.dart';
+import '../widgets/home/greeting_widget.dart';
+import '../widgets/home/jar_grid.dart';
+import '../services/user_service.dart';
+import '../widgets/home/content_container.dart';
 
 /// The main screen of the app displaying a greeting, jar grid, and navigation bar.
 class HomeScreen extends StatefulWidget {
@@ -17,8 +16,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class HomeScreenState extends State<HomeScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final UserService _userService = UserService(); // User service instance
 
   String _searchQuery = ''; // Holds the current search query
   String? _username; // Holds the fetched username
@@ -33,29 +31,12 @@ class HomeScreenState extends State<HomeScreen> {
 
   /// Initializes user data by fetching the user ID and username.
   Future<void> _initializeUser() async {
-    try {
-      final uid = _auth.currentUser?.uid;
-      if (uid != null) {
-        final doc = await _firestore.collection('users').doc(uid).get();
-        setState(() {
-          _userId = uid;
-          _username = doc.data()?['username'] ?? 'User';
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _userId = null;
-          _username = 'User';
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _userId = null;
-        _username = 'User';
-        _isLoading = false;
-      });
-    }
+    final user = await _userService.getCurrentUser();
+    setState(() {
+      _userId = user?.uid;
+      _username = user?.username ?? 'User';
+      _isLoading = false;
+    });
   }
 
   /// Updates the search query and triggers UI refresh.
@@ -91,68 +72,53 @@ class HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background, // Sets background color from theme
-
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        elevation: 0, // Removes shadow for a flat appearance
+        elevation: 0,
         toolbarHeight: 80,
-        automaticallyImplyLeading: false, // Ensures no back button is shown
+        automaticallyImplyLeading: false,
         title: GreetingWidget(
-          name: _username ?? 'User', // Pass the fetched username
-          userId: _userId!, // Pass the userId dynamically
-        ), // Personalized greeting widget
-        leading: null, // Explicitly ensure no leading widget
+          name: _username ?? 'User',
+          userId: _userId!,
+        ),
       ),
-
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
           children: [
             Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                  color: AppColors
-                      .jarGridBackground, // Background for jar grid container
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow:
-                      AppShadows.subtleShadowList, // Rounded container edges
-                ),
+              child: ContentContainer(
                 child: Column(
                   children: [
-                    // Header section with fixed height, including search functionality
                     SizedBox(
                       height: 60,
                       child: HeaderWidget(
-                        onSearchChanged:
-                            _onSearchChanged, // Passes search changes
-                        userId: _userId!, // Pass the userId dynamically
+                        onSearchChanged: _onSearchChanged,
+                        userId: _userId!,
                       ),
                     ),
                     const Divider(
                       thickness: 1,
                       color: AppColors.fonts,
                       indent: 8,
-                      endIndent: 8, // Styling for the divider line
+                      endIndent: 8,
                     ),
-                    // Main content area with jar grid, filtered by search query
                     Expanded(
                       child: JarGrid(
                         searchQuery: _searchQuery,
-                        userId: _userId!, // Pass the userId dynamically
+                        userId: _userId!,
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 16), // Spacing before the navigation bar
+            const SizedBox(height: 16),
           ],
         ),
       ),
-
-      bottomNavigationBar: const BottomNavBar(), // Bottom navigation bar widget
+      bottomNavigationBar: const BottomNavBar(),
     );
   }
 }

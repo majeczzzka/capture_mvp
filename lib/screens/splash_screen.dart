@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 import 'package:capture_mvp/main.dart';
 
+// A splash screen widget that displays the app logo.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -15,7 +16,6 @@ class SplashScreenState extends State<SplashScreen> {
     super.initState();
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
-        print("Navigating to CaptureApp");
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const AuthWrapper()),
         );

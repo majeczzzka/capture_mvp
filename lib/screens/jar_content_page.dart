@@ -1,13 +1,15 @@
-import 'package:capture_mvp/widgets/header_widget.dart';
+import 'package:capture_mvp/widgets/jar_content/jar_content_grid.dart';
 import 'package:flutter/material.dart';
-import 'package:capture_mvp/utils/app_shadows.dart';
 import '../utils/app_colors.dart';
-import '../widgets/bottom_nav_bar.dart';
+import '../widgets/nav/bottom_nav_bar.dart';
+import '../widgets/header/header_widget.dart';
+import '../widgets/home/content_container.dart';
 
+/// Displays the contents of a specific jar.
 class JarContentPage extends StatelessWidget {
   final String jarTitle;
-  final String userId; // Added userId for HeaderWidgetJar
-  final String jarId; // Added jarId for HeaderWidgetJar
+  final String userId;
+  final String jarId;
   final List<Map<String, String>> contents;
 
   const JarContentPage({
@@ -24,12 +26,12 @@ class JarContentPage extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        elevation: 0, // Removes shadow
+        elevation: 0,
         toolbarHeight: 80,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.fonts),
           onPressed: () {
-            Navigator.pop(context); // Navigate back
+            Navigator.pop(context);
           },
         ),
       ),
@@ -38,23 +40,15 @@ class JarContentPage extends StatelessWidget {
         child: Column(
           children: [
             Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                  color: Colors.white, // Unified container background
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: AppShadows.subtleShadowList,
-                ),
+              child: ContentContainer(
                 child: Column(
                   children: [
                     // Header Section
                     SizedBox(
                       height: 60,
                       child: HeaderWidget(
-                        userId: userId, // Pass the userId
-                        onSearchChanged: (query) {
-                          print("Search query: $query");
-                        },
+                        userId: userId,
+                        onSearchChanged: (query) {},
                       ),
                     ),
                     const Divider(
@@ -81,77 +75,18 @@ class JarContentPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Scrollable Grid Section
+                    // Content Grid Section
                     Expanded(
-                      child: Scrollbar(
-                        thickness: 3, // Thickness of the scrollbar
-                        radius: const Radius.circular(10), // Rounded corners
-                        trackVisibility: false,
-                        interactive:
-                            true, // Allow interaction with the scrollbar
-                        child: GridView.builder(
-                          padding: const EdgeInsets.only(
-                              bottom: 16.0), // Space below grid
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2, // Two items per row
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
-                          ),
-                          itemCount: contents.length,
-                          itemBuilder: (context, index) {
-                            final content = contents[index];
-                            return GestureDetector(
-                              onTap: () {
-                                print("${content['type']} tapped");
-                              },
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    content['type'] == 'video'
-                                        ? Icons.videocam
-                                        : content['type'] == 'note'
-                                            ? Icons.notes
-                                            : content['type'] == 'photo'
-                                                ? Icons.photo
-                                                : content['type'] ==
-                                                        'voice note'
-                                                    ? Icons.mic
-                                                    : content['type'] ==
-                                                            'template'
-                                                        ? Icons
-                                                            .format_paint // Add this case
-                                                        : Icons
-                                                            .error, // Fallback for unknown types
-                                    size: 50,
-                                    color: Colors.grey,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    content['type']!.toUpperCase(),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                      child: JarContentGrid(contents: contents),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(
-                height: 16), // Adds space between content and BottomNavBar
+            const SizedBox(height: 16),
           ],
         ),
       ),
-      // Bottom Navigation Bar
       bottomNavigationBar: const BottomNavBar(),
     );
   }
