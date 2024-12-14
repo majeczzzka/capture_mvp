@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'icon_column.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// A widget for displaying multimedia options for a jar.
 class MultimediaOptions extends StatelessWidget {
   final String userId;
   final String jarId;
@@ -12,6 +11,75 @@ class MultimediaOptions extends StatelessWidget {
     required this.jarId,
   });
 
+  Future<void> _addContentWithDate(
+      BuildContext context, String type, IconData icon) async {
+    // Show Date Picker Dialog
+    final DateTime? selectedDate = await showDialog<DateTime>(
+      context: context,
+      builder: (context) {
+        DateTime tempDate = DateTime.now(); // Default date
+        return AlertDialog(
+          title: Text("Select Date for $type"),
+          content: SizedBox(
+            height: 400,
+            width: 300,
+            child: CalendarDatePicker(
+              initialDate: tempDate,
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
+              onDateChanged: (date) {
+                tempDate = date;
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog without saving
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, tempDate); // Return selected date
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (selectedDate != null) {
+      try {
+        // Save content with selected date into Firestore
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .collection('jars')
+            .doc(jarId)
+            .update({
+          'content': FieldValue.arrayUnion([
+            {
+              'type': type.toLowerCase(),
+              'icon': icon.codePoint, // Save the icon for rendering
+              'data': 'Sample $type content',
+              'date': selectedDate.toIso8601String(), // Save the date
+            }
+          ])
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("$type added successfully!")),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to add $type: $e")),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -19,48 +87,40 @@ class MultimediaOptions extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            // Displays the multimedia options
-            IconColumn(
-              icon: Icons.edit,
-              label: "Note",
-              userId: userId,
-              jarId: jarId,
-            ),
-            IconColumn(
-              icon: Icons.videocam,
-              label: "Video",
-              userId: userId,
-              jarId: jarId,
-            ),
-            IconColumn(
-              icon: Icons.photo,
-              label: "Photo",
-              userId: userId,
-              jarId: jarId,
-            ),
+            _buildIconColumn(context, Icons.edit, "Note"),
+            _buildIconColumn(context, Icons.videocam, "Video"),
+            _buildIconColumn(context, Icons.photo, "Photo"),
           ],
         ),
-        // Adds spacing between the multimedia options
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            IconColumn(
-              icon: Icons.mic,
-              label: "Voice Note",
-              userId: userId,
-              jarId: jarId,
-            ),
+            _buildIconColumn(context, Icons.mic, "Voice Note"),
             const SizedBox(width: 24),
-            IconColumn(
-              icon: Icons.format_paint,
-              label: "Template",
-              userId: userId,
-              jarId: jarId,
-            ),
+            _buildIconColumn(context, Icons.format_paint, "Template"),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildIconColumn(BuildContext context, IconData icon, String label) {
+    return InkWell(
+      onTap: () => _addContentWithDate(context, label, icon),
+      borderRadius: BorderRadius.circular(8),
+      splashColor: Colors.grey.withOpacity(0.3),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.grey),
+            const SizedBox(height: 4),
+            Text(label, style: const TextStyle(color: Colors.grey)),
+          ],
+        ),
+      ),
     );
   }
 }

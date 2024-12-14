@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/app_colors.dart';
 import '../widgets/nav/bottom_nav_bar.dart';
 import '../widgets/home/greeting_widget.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// ProfileScreen displays the user's profile with an avatar and greeting.
 class ProfileScreen extends StatelessWidget {
@@ -28,6 +29,18 @@ class ProfileScreen extends StatelessWidget {
                 },
               )
             : null,
+        // Add Logout Button to the AppBar
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: AppColors.fonts),
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut(); // Perform logout
+              Navigator.of(context)
+                  .pushReplacementNamed('/login'); // Redirect to login screen
+            },
+            tooltip: 'Logout',
+          ),
+        ],
       ),
       body: Center(
         // Center the entire content
