@@ -76,29 +76,35 @@ class JarGrid extends StatelessWidget {
             final doc = filteredJars[index];
             final data = doc.data() as Map<String, dynamic>;
 
-            // Map Firestore data to Jar object
-            final collaborators =
+            // Get owner avatar
+            final ownerAvatar = RandomAvatar(
+              (data['owner'] as String?)?.hashCode.toString() ?? '',
+              height: 20,
+              width: 20,
+            );
+
+            // Get collaborator avatars
+            final collaboratorAvatars =
                 (data['collaborators'] as List<dynamic>? ?? [])
                     .map((collaboratorId) => RandomAvatar(
-                          collaboratorId.hashCode
-                              .toString(), // Ensure consistent identifier
+                          collaboratorId.hashCode.toString(),
                           height: 20,
                           width: 20,
                         ))
                     .toList();
 
+            // Combine owner and collaborator avatars
+            final allAvatars = [
+              ownerAvatar, // Always add the owner first
+              ...collaboratorAvatars, // Add collaborators
+            ];
+
+            // Map Firestore data to Jar object
             final jar = Jar(
               title: data['name'] ?? 'Untitled Jar',
               filterColor:
                   Color(int.parse(data['color'].replaceFirst('#', '0xFF'))),
-              images: [
-                RandomAvatar(
-                  userId.hashCode.toString(), // Consistent owner identifier
-                  height: 20,
-                  width: 20,
-                ),
-                ...collaborators, // Add collaborators' avatars
-              ],
+              images: allAvatars, // Use combined avatars list
               jarImage: 'assets/images/jar.png', // Placeholder jar image
             );
 
