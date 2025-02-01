@@ -32,6 +32,7 @@ class HomeScreenState extends State<HomeScreen> {
   /// Initializes user data by fetching the user ID and username.
   Future<void> _initializeUser() async {
     final user = await _userService.getCurrentUser();
+    if (!mounted) return; // Return early if the widget has been disposed.
     setState(() {
       _userId = user?.uid;
       _username = user?.username ?? 'User';

@@ -1,8 +1,10 @@
 // lib/app/capture_app.dart
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Screens
 import 'screens/login_screen.dart';
@@ -14,9 +16,21 @@ import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  print("✅ Firebase initialized successfully");
+
+  try {
+    String envPath = ".env";
+    await dotenv.load(fileName: envPath);
+    print("✅ .env file loaded successfully: ${dotenv.env}");
+  } catch (e) {
+    print("⚠️ ERROR: .env file could not be loaded: $e");
+  }
+
   runApp(const CaptureApp());
 }
 
