@@ -4,21 +4,42 @@ import '../utils/app_colors.dart';
 import '../widgets/nav/bottom_nav_bar.dart';
 import '../widgets/header/header_widget.dart';
 import '../widgets/home/content_container.dart';
+import '../services/s3_service.dart';
+import '../models/s3_item.dart';
 
 /// Displays the contents of a specific jar.
-class JarContentPage extends StatelessWidget {
+class JarContentPage extends StatefulWidget {
   final String jarTitle;
   final String userId;
   final String jarId;
-  final List<Map<String, String>> contents;
 
   const JarContentPage({
     super.key,
     required this.jarTitle,
     required this.userId,
     required this.jarId,
-    required this.contents,
   });
+
+  @override
+  _JarContentPageState createState() => _JarContentPageState();
+}
+
+class _JarContentPageState extends State<JarContentPage> {
+  List<S3Item> items = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadItems();
+  }
+
+  Future<void> _loadItems() async {
+    List<S3Item> fetchedItems =
+        await S3Service(userId: widget.userId).getJarContents(widget.jarId);
+    setState(() {
+      items = fetchedItems;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +68,7 @@ class JarContentPage extends StatelessWidget {
                     SizedBox(
                       height: 60,
                       child: HeaderWidget(
-                        userId: userId,
+                        userId: widget.userId,
                         onSearchChanged: (query) {},
                       ),
                     ),
@@ -62,7 +83,7 @@ class JarContentPage extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
                       child: Text(
-                        jarTitle,
+                        widget.jarTitle,
                         style: const TextStyle(
                           decoration: TextDecoration.underline,
                           decorationColor: AppColors.fonts,
@@ -77,7 +98,12 @@ class JarContentPage extends StatelessWidget {
                     const SizedBox(height: 16),
                     // Content Grid Section
                     Expanded(
-                      child: JarContentGrid(contents: contents),
+                      child: JarContentGrid(
+                        items: items,
+                        userId: widget.userId,
+                        jarId: widget.jarId,
+                        onDelete: _loadItems,
+                      ),
                     ),
                   ],
                 ),

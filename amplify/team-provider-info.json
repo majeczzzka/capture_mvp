@@ -1,0 +1,23 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-capturemvp-dev-175033-authRole",
+      "UnauthRoleArn": "arn:aws:iam::474668417037:role/amplify-capturemvp-dev-175033-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::474668417037:role/amplify-capturemvp-dev-175033-authRole",
+      "Region": "us-east-2",
+      "DeploymentBucketName": "amplify-capturemvp-dev-175033-deployment",
+      "UnauthRoleName": "amplify-capturemvp-dev-175033-unauthRole",
+      "StackName": "amplify-capturemvp-dev-175033",
+      "StackId": "arn:aws:cloudformation:us-east-2:474668417037:stack/amplify-capturemvp-dev-175033/41751e70-e688-11ef-920f-0aa0823d4409",
+      "AmplifyAppId": "dyk49a4f9u3xn"
+    },
+    "categories": {
+      "auth": {
+        "capturemvp846afc7c": {}
+      },
+      "storage": {
+        "s3storage": {}
+      }
+    }
+  }
+}

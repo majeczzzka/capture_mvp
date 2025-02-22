@@ -3,22 +3,27 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// A widget that displays content in a calendar view.
-class CalendarContent extends StatelessWidget {
+class CalendarContent extends StatefulWidget {
   final String userId;
 
-  const CalendarContent({
-    super.key,
-    required this.userId,
-  });
+  const CalendarContent({Key? key, required this.userId}) : super(key: key);
 
   @override
+  _CalendarContentState createState() => _CalendarContentState();
+}
+
+class _CalendarContentState extends State<CalendarContent> {
+  @override
   Widget build(BuildContext context) {
+    // Initialize the stream directly in the build method
+    final Stream<QuerySnapshot> stream = FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.userId)
+        .collection('jars')
+        .snapshots();
+
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('jars')
-          .snapshots(),
+      stream: stream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -79,10 +84,16 @@ class CalendarContent extends StatelessWidget {
               content.containsKey('type') &&
               content.containsKey('data') &&
               content.containsKey('date')) {
+            // Log the image URL
+            print('Image URL: ${content['data']}'); // Log the URL for debugging
+
             contentData.add({
               'type': content['type'],
-              'data': content['data'],
-              'date': DateTime.tryParse(content['date']) ?? DateTime.now(),
+              'data': content['data'], // Ensure this is the image URL
+              'date': content['date'] is Timestamp
+                  ? (content['date'] as Timestamp).toDate()
+                  : DateTime.tryParse(content['date'].toString()) ??
+                      DateTime.now(),
               'jarName': jarName,
               'jarColor': jarColor,
             });

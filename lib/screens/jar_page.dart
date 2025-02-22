@@ -126,11 +126,6 @@ class JarPage extends StatelessWidget {
               jarTitle: jarTitle,
               userId: userId,
               jarId: jarId,
-              contents: [
-                {'type': 'note', 'data': 'Sample Note 1'},
-                {'type': 'video', 'data': ''},
-                {'type': 'photo', 'data': 'Sample Photo'},
-              ],
             ),
           ),
         );

@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to your photo library to upload images to your jars</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs access to camera to take photos for your jars</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs access to your microphone for videos.</string>
 </dict>
 </plist>
