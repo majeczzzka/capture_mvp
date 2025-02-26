@@ -46,6 +46,8 @@ class GroupedContent extends StatelessWidget {
           itemCount: contentList.length,
           itemBuilder: (context, index) {
             final content = contentList[index];
+            print(
+                "Creating ContentItem for: ${content['jarName']}"); // Debugging
             return ContentItem(content: content);
           },
         ),

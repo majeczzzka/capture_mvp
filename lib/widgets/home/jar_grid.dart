@@ -106,6 +106,7 @@ class JarGrid extends StatelessWidget {
                   Color(int.parse(data['color'].replaceFirst('#', '0xFF'))),
               images: allAvatars, // Use combined avatars list
               jarImage: 'assets/images/jar.png', // Placeholder jar image
+              collaborators: List<String>.from(data['collaborators'] ?? []),
             );
 
             // Pass all required arguments to JarItem

@@ -1,3 +1,5 @@
+import 'package:capture_mvp/services/s3_service.dart';
+import 'package:capture_mvp/models/s3_item.dart';
 import 'package:capture_mvp/widgets/calendar/grouped_content.dart'; // Assuming the groupedContent widget is in this file
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,17 +15,54 @@ class CalendarContent extends StatefulWidget {
 }
 
 class _CalendarContentState extends State<CalendarContent> {
-  @override
-  Widget build(BuildContext context) {
-    // Initialize the stream directly in the build method
-    final Stream<QuerySnapshot> stream = FirebaseFirestore.instance
+  Future<Map<String, List<Map<String, dynamic>>>>
+      _fetchAndGroupContent() async {
+    final List<Map<String, dynamic>> contentData = [];
+
+    final jarsSnapshot = await FirebaseFirestore.instance
         .collection('users')
         .doc(widget.userId)
         .collection('jars')
-        .snapshots();
+        .get();
 
-    return StreamBuilder<QuerySnapshot>(
-      stream: stream,
+    for (final jar in jarsSnapshot.docs) {
+      final data = jar.data() as Map<String, dynamic>;
+      final jarId = jar.id; // Get the jar ID
+      final jarName = data['name'] ?? 'Unknown Jar';
+      final jarColor = data['color'] ?? '#000000';
+
+      // Fetch images from AWS S3
+      List<S3Item> s3Items =
+          await S3Service(userId: widget.userId).getJarContents(jarId);
+
+      for (final s3Item in s3Items) {
+        contentData.add({
+          'type': 'image',
+          'data': s3Item.url,
+          'date': s3Item.uploadedAt ?? DateTime.now(),
+          'jarName': jarName,
+          'jarColor': jarColor,
+        });
+      }
+    }
+
+    // Sort and group by year-month
+    contentData.sort((a, b) => b['date'].compareTo(a['date']));
+    final Map<String, List<Map<String, dynamic>>> groupedContent = {};
+
+    for (final content in contentData) {
+      final date = content['date'] as DateTime;
+      final key = '${date.year}-${date.month.toString().padLeft(2, '0')}';
+      groupedContent.putIfAbsent(key, () => []).add(content);
+    }
+
+    return groupedContent;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, List<Map<String, dynamic>>>>(
+      future: _fetchAndGroupContent(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -38,10 +77,9 @@ class _CalendarContentState extends State<CalendarContent> {
           );
         }
 
-        // Collect and group content
-        final groupedContent = _extractAndGroupContent(snapshot.data);
+        final groupedContent = snapshot.data;
 
-        if (groupedContent.isEmpty) {
+        if (groupedContent == null || groupedContent.isEmpty) {
           return const Center(
             child: Text(
               'No content available',
@@ -56,7 +94,6 @@ class _CalendarContentState extends State<CalendarContent> {
             final key = groupedContent.keys.toList()[index];
             final contentList = groupedContent[key]!;
 
-            // Call the groupedContent widget or function
             return GroupedContent(
               title: key,
               contentList: contentList,
@@ -65,53 +102,5 @@ class _CalendarContentState extends State<CalendarContent> {
         );
       },
     );
-  }
-
-  /// Extracts and groups content data from the Firestore snapshot.
-  Map<String, List<Map<String, dynamic>>> _extractAndGroupContent(
-      QuerySnapshot? snapshot) {
-    final contentData = <Map<String, dynamic>>[];
-
-    for (final jar in snapshot?.docs ?? []) {
-      final data = jar.data() as Map<String, dynamic>;
-      final jarName = data['name'] ?? 'Unknown Jar';
-      final jarColor = data['color'] ?? '#000000';
-
-      if (data.containsKey('content') && data['content'] is List<dynamic>) {
-        final jarContent = data['content'] as List<dynamic>;
-        for (final content in jarContent) {
-          if (content is Map<String, dynamic> &&
-              content.containsKey('type') &&
-              content.containsKey('data') &&
-              content.containsKey('date')) {
-            // Log the image URL
-            print('Image URL: ${content['data']}'); // Log the URL for debugging
-
-            contentData.add({
-              'type': content['type'],
-              'data': content['data'], // Ensure this is the image URL
-              'date': content['date'] is Timestamp
-                  ? (content['date'] as Timestamp).toDate()
-                  : DateTime.tryParse(content['date'].toString()) ??
-                      DateTime.now(),
-              'jarName': jarName,
-              'jarColor': jarColor,
-            });
-          }
-        }
-      }
-    }
-
-    // Sort and group by year-month
-    contentData.sort((a, b) => b['date'].compareTo(a['date']));
-    final groupedContent = <String, List<Map<String, dynamic>>>{};
-
-    for (final content in contentData) {
-      final date = content['date'] as DateTime;
-      final key = '${date.year}-${date.month.toString().padLeft(2, '0')}';
-      groupedContent.putIfAbsent(key, () => []).add(content);
-    }
-
-    return groupedContent;
   }
 }

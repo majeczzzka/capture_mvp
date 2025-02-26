@@ -55,7 +55,14 @@ class JarContentGrid extends StatelessWidget {
               onDelete();
             }
           },
-          child: MediaThumbnail(s3Item: item),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              color: Colors.white,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: MediaThumbnail(s3Item: item),
+          ),
         );
       },
     );

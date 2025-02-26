@@ -7,6 +7,7 @@ class Jar {
   final List<Widget>
       images; // List of avatar image paths associated with the jar
   final String jarImage; // Image path for the jar itself
+  final List<String> collaborators; // List of user IDs associated with the jar
 
   /// Constructor for creating a jar instance
   Jar({
@@ -14,5 +15,6 @@ class Jar {
     required this.filterColor,
     required this.images,
     required this.jarImage,
+    required this.collaborators,
   });
 }

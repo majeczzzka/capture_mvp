@@ -5,7 +5,7 @@ import 'package:path/path.dart' as path;
 import 'dart:io';
 import 'package:amplify_flutter/amplify_flutter.dart';
 
-class MultimediaOptions extends StatelessWidget {
+class MultimediaOptions extends StatefulWidget {
   final String userId;
   final String jarId;
 
@@ -14,6 +14,20 @@ class MultimediaOptions extends StatelessWidget {
     required this.userId,
     required this.jarId,
   });
+
+  @override
+  _MultimediaOptionsState createState() => _MultimediaOptionsState();
+}
+
+class _MultimediaOptionsState extends State<MultimediaOptions> {
+  ScaffoldMessengerState? _scaffoldMessenger;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Save the reference to the ScaffoldMessenger
+    _scaffoldMessenger = ScaffoldMessenger.of(context);
+  }
 
   Future<void> _addContentWithDate(
       BuildContext context, String type, IconData icon) async {
@@ -28,7 +42,7 @@ class MultimediaOptions extends StatelessWidget {
         await _uploadMedia(context, image, type, icon);
       } catch (e) {
         print('Image picker error: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
+        _scaffoldMessenger?.showSnackBar(
           SnackBar(content: Text("Failed to pick image: $e")),
         );
       }
@@ -51,7 +65,7 @@ class MultimediaOptions extends StatelessWidget {
         final size = await videoFile.length();
         if (size > 100 * 1024 * 1024) {
           // 100MB limit
-          ScaffoldMessenger.of(context).showSnackBar(
+          _scaffoldMessenger?.showSnackBar(
             const SnackBar(
                 content: Text(
                     "Video file is too large. Please choose a smaller video.")),
@@ -67,7 +81,7 @@ class MultimediaOptions extends StatelessWidget {
           errorMessage =
               'Please grant permission to access your videos in Settings';
         }
-        ScaffoldMessenger.of(context).showSnackBar(
+        _scaffoldMessenger?.showSnackBar(
           SnackBar(content: Text(errorMessage)),
         );
       }
@@ -81,7 +95,7 @@ class MultimediaOptions extends StatelessWidget {
   Future<void> _uploadMedia(
       BuildContext context, XFile media, String type, IconData icon) async {
     try {
-      ScaffoldMessenger.of(context).showSnackBar(
+      _scaffoldMessenger?.showSnackBar(
         const SnackBar(content: Text("Uploading media...")),
       );
 
@@ -91,7 +105,7 @@ class MultimediaOptions extends StatelessWidget {
       final fileName =
           '${DateTime.now().millisecondsSinceEpoch}_${path.basename(media.path)}';
 
-      final key = 'uploads/$userId/$jarId/$fileName';
+      final key = 'uploads/${widget.userId}/${widget.jarId}/$fileName';
       print('Starting S3 upload for key: $key');
 
       final uploadResult = await Amplify.Storage.uploadFile(
@@ -109,9 +123,9 @@ class MultimediaOptions extends StatelessWidget {
 
       await FirebaseFirestore.instance
           .collection('users')
-          .doc(userId)
+          .doc(widget.userId)
           .collection('jars')
-          .doc(jarId)
+          .doc(widget.jarId)
           .update({
         'content': FieldValue.arrayUnion([
           {
@@ -123,16 +137,25 @@ class MultimediaOptions extends StatelessWidget {
         ])
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${type.toLowerCase()} uploaded successfully!")),
-      );
+      if (mounted) {
+        _scaffoldMessenger?.showSnackBar(
+          SnackBar(
+              content: Text("${type.toLowerCase()} uploaded successfully!")),
+        );
+      }
     } catch (e, stackTrace) {
       print('Detailed S3 upload error: $e');
       print('Stack trace: $stackTrace');
-      ScaffoldMessenger.of(context).showSnackBar(
+      _scaffoldMessenger?.showSnackBar(
         SnackBar(content: Text("Failed to upload ${type.toLowerCase()}: $e")),
       );
     }
+  }
+
+  @override
+  void dispose() {
+    // Clean up any resources if needed
+    super.dispose();
   }
 
   @override
