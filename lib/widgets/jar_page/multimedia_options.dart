@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as path;
 import 'dart:io';
-import 'package:amplify_flutter/amplify_flutter.dart';
+import 'package:capture_mvp/services/s3_service.dart';
 
 class MultimediaOptions extends StatefulWidget {
   final String userId;
   final String jarId;
+  final List<String> collaborators;
 
   const MultimediaOptions({
     super.key,
     required this.userId,
     required this.jarId,
+    required this.collaborators,
   });
 
   @override
@@ -20,142 +20,65 @@ class MultimediaOptions extends StatefulWidget {
 }
 
 class _MultimediaOptionsState extends State<MultimediaOptions> {
+  late S3Service _s3Service;
   ScaffoldMessengerState? _scaffoldMessenger;
+
+  @override
+  void initState() {
+    super.initState();
+    _s3Service = S3Service(userId: widget.userId);
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Save the reference to the ScaffoldMessenger
     _scaffoldMessenger = ScaffoldMessenger.of(context);
   }
 
-  Future<void> _addContentWithDate(
-      BuildContext context, String type, IconData icon) async {
-    // Only handle photo and video for now
-    if (type.toLowerCase() == 'photo') {
-      try {
-        final ImagePicker picker = ImagePicker();
-        final XFile? image =
-            await picker.pickImage(source: ImageSource.gallery);
-
-        if (image == null) return;
-        await _uploadMedia(context, image, type, icon);
-      } catch (e) {
-        print('Image picker error: $e');
-        _scaffoldMessenger?.showSnackBar(
-          SnackBar(content: Text("Failed to pick image: $e")),
-        );
-      }
+  Future<void> _addContent(String type) async {
+    if (type != 'photo' && type != 'video') {
+      _scaffoldMessenger?.showSnackBar(
+        SnackBar(content: Text("$type functionality is not yet available.")),
+      );
       return;
     }
 
-    if (type.toLowerCase() == 'video') {
-      try {
-        final ImagePicker picker = ImagePicker();
-        final XFile? video = await picker.pickVideo(
-          source: ImageSource.gallery,
-          maxDuration:
-              const Duration(minutes: 10), // Optional: limit video duration
-        );
+    try {
+      final ImagePicker picker = ImagePicker();
+      XFile? pickedFile;
 
-        if (video == null) return;
-
-        // Check file size before uploading (optional)
-        final File videoFile = File(video.path);
-        final size = await videoFile.length();
-        if (size > 100 * 1024 * 1024) {
-          // 100MB limit
-          _scaffoldMessenger?.showSnackBar(
-            const SnackBar(
-                content: Text(
-                    "Video file is too large. Please choose a smaller video.")),
-          );
-          return;
-        }
-
-        await _uploadMedia(context, video, type, icon);
-      } catch (e) {
-        print('Video picker error: $e');
-        String errorMessage = 'Failed to pick video';
-        if (e.toString().contains('permission')) {
-          errorMessage =
-              'Please grant permission to access your videos in Settings';
-        }
-        _scaffoldMessenger?.showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
+      if (type == 'photo') {
+        pickedFile = await picker.pickImage(source: ImageSource.gallery);
+      } else if (type == 'video') {
+        pickedFile = await picker.pickVideo(source: ImageSource.gallery);
       }
-      return;
-    }
 
-    // For other types (Note, Voice Note, Template), do nothing for now
-    print('${type.toLowerCase()} functionality not implemented yet');
+      if (pickedFile == null) return;
+      await _uploadMedia(pickedFile, type);
+    } catch (e) {
+      print('❌ Error picking $type: $e');
+      _scaffoldMessenger?.showSnackBar(
+        SnackBar(content: Text("Failed to pick $type: $e")),
+      );
+    }
   }
 
-  Future<void> _uploadMedia(
-      BuildContext context, XFile media, String type, IconData icon) async {
+  Future<void> _uploadMedia(XFile media, String type) async {
     try {
       _scaffoldMessenger?.showSnackBar(
         const SnackBar(content: Text("Uploading media...")),
       );
 
-      print('Checking Amplify configuration status: ${Amplify.isConfigured}');
+      await _s3Service.uploadFileToJar(
+          widget.jarId, media.path, widget.collaborators, type);
+      await _s3Service.syncJarContentAcrossCollaborators(widget.jarId);
 
-      final file = File(media.path);
-      final fileName =
-          '${DateTime.now().millisecondsSinceEpoch}_${path.basename(media.path)}';
-
-      final key = 'uploads/${widget.userId}/${widget.jarId}/$fileName';
-      print('Starting S3 upload for key: $key');
-
-      final uploadResult = await Amplify.Storage.uploadFile(
-        localFile: AWSFile.fromPath(file.path),
-        key: key,
-        options: const StorageUploadFileOptions(
-          accessLevel: StorageAccessLevel.guest,
-        ),
-      );
-      print('Upload completed: ${uploadResult.toString()}');
-
-      final getUrlOperation = await Amplify.Storage.getUrl(key: key);
-      final String mediaUrl = (await getUrlOperation.result).url.toString();
-      print('Got S3 URL: $mediaUrl');
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.userId)
-          .collection('jars')
-          .doc(widget.jarId)
-          .update({
-        'content': FieldValue.arrayUnion([
-          {
-            'type': type.toLowerCase(),
-            'icon': icon.codePoint,
-            'data': mediaUrl,
-            'date': DateTime.now().toIso8601String(),
-          }
-        ])
-      });
-
-      if (mounted) {
-        _scaffoldMessenger?.showSnackBar(
-          SnackBar(
-              content: Text("${type.toLowerCase()} uploaded successfully!")),
-        );
-      }
-    } catch (e, stackTrace) {
-      print('Detailed S3 upload error: $e');
-      print('Stack trace: $stackTrace');
       _scaffoldMessenger?.showSnackBar(
-        SnackBar(content: Text("Failed to upload ${type.toLowerCase()}: $e")),
+        SnackBar(content: Text("$type uploaded successfully!")),
       );
+    } catch (e) {
+      print('❌ Error uploading $type: $e');
     }
-  }
-
-  @override
-  void dispose() {
-    // Clean up any resources if needed
-    super.dispose();
   }
 
   @override
@@ -165,37 +88,40 @@ class _MultimediaOptionsState extends State<MultimediaOptions> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildIconColumn(context, Icons.edit, "Note"),
-            _buildIconColumn(context, Icons.videocam, "Video"),
-            _buildIconColumn(context, Icons.photo, "Photo"),
+            _buildIconColumn("Note", Icons.edit, isActive: false),
+            _buildIconColumn("Video", Icons.videocam, isActive: true),
+            _buildIconColumn("Photo", Icons.photo, isActive: true),
           ],
         ),
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildIconColumn(context, Icons.mic, "Voice Note"),
+            _buildIconColumn("Voice Note", Icons.mic, isActive: false),
             const SizedBox(width: 24),
-            _buildIconColumn(context, Icons.format_paint, "Template"),
+            _buildIconColumn("Template", Icons.format_paint, isActive: false),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildIconColumn(BuildContext context, IconData icon, String label) {
+  Widget _buildIconColumn(String label, IconData icon,
+      {required bool isActive}) {
     return InkWell(
-      onTap: () => _addContentWithDate(context, label, icon),
+      onTap: isActive ? () => _addContent(label.toLowerCase()) : null,
       borderRadius: BorderRadius.circular(8),
-      splashColor: Colors.grey.withOpacity(0.3),
+      splashColor: isActive ? Colors.grey.withOpacity(0.3) : null,
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.grey),
+            Icon(icon, color: isActive ? Colors.grey[800] : Colors.grey[400]),
             const SizedBox(height: 4),
-            Text(label, style: const TextStyle(color: Colors.grey)),
+            Text(label,
+                style: TextStyle(
+                    color: isActive ? Colors.grey[800] : Colors.grey[400])),
           ],
         ),
       ),

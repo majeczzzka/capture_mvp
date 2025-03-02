@@ -7,11 +7,13 @@ import '../../utils/month_util.dart';
 class GroupedContent extends StatelessWidget {
   final String title;
   final List<Map<String, dynamic>> contentList;
+  final String userId;
 
   const GroupedContent({
     super.key,
     required this.title,
     required this.contentList,
+    required this.userId,
   });
 
   @override
@@ -48,7 +50,11 @@ class GroupedContent extends StatelessWidget {
             final content = contentList[index];
             print(
                 "Creating ContentItem for: ${content['jarName']}"); // Debugging
-            return ContentItem(content: content);
+            return ContentItem(
+              content: content,
+              userId: userId,
+              jarId: content['jarId'],
+            );
           },
         ),
         const SizedBox(height: 16), // Space after each group

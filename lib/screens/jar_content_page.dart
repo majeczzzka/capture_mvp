@@ -6,6 +6,8 @@ import '../widgets/header/header_widget.dart';
 import '../widgets/home/content_container.dart';
 import '../services/s3_service.dart';
 import '../models/s3_item.dart';
+import 'package:amplify_flutter/amplify_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Displays the contents of a specific jar.
 class JarContentPage extends StatefulWidget {
@@ -36,6 +38,8 @@ class _JarContentPageState extends State<JarContentPage> {
   Future<void> _loadItems() async {
     List<S3Item> fetchedItems =
         await S3Service(userId: widget.userId).getJarContents(widget.jarId);
+    final content = fetchedItems.map((item) => item.toJson()).toList();
+    print("📂 Content in jar: $content");
     setState(() {
       items = fetchedItems;
     });
@@ -98,11 +102,46 @@ class _JarContentPageState extends State<JarContentPage> {
                     const SizedBox(height: 16),
                     // Content Grid Section
                     Expanded(
-                      child: JarContentGrid(
-                        items: items,
-                        userId: widget.userId,
-                        jarId: widget.jarId,
-                        onDelete: _loadItems,
+                      child: GridView.builder(
+                        padding: const EdgeInsets.all(8.0),
+                        itemCount: items.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 0.7,
+                        ),
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+
+                          return Card(
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: Image.network(
+                                    item.url, // Use the S3 URL to display the image
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      print("⚠️ Error loading image: $error");
+                                      return Icon(Icons.broken_image,
+                                          size: 50, color: Colors.red);
+                                    },
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Text(
+                                    item.type.toUpperCase(),
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],

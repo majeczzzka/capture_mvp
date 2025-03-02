@@ -12,4 +12,30 @@ class S3Item {
     required this.uploadedAt,
     this.isDeleted = false,
   });
+
+  S3Item copyWith({
+    String? key,
+    String? url,
+    String? type,
+    DateTime? uploadedAt,
+    bool? isDeleted,
+  }) {
+    return S3Item(
+      key: key ?? this.key,
+      url: url ?? this.url,
+      type: type ?? this.type,
+      uploadedAt: uploadedAt ?? this.uploadedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'key': key,
+      'url': url,
+      'type': type,
+      'uploadedAt': uploadedAt.toIso8601String(),
+      'isDeleted': isDeleted,
+    };
+  }
 }

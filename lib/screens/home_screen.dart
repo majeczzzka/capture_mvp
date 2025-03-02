@@ -22,6 +22,7 @@ class HomeScreenState extends State<HomeScreen> {
   String? _username; // Holds the fetched username
   String? _userId; // Holds the current user's ID
   bool _isLoading = true; // Loading state for fetching user data
+  List<String> _collaborators = []; // Define the collaborators list
 
   @override
   void initState() {
@@ -109,6 +110,8 @@ class HomeScreenState extends State<HomeScreen> {
                       child: JarGrid(
                         searchQuery: _searchQuery,
                         userId: _userId!,
+                        collaborators:
+                            _collaborators, // Pass the collaborators list
                       ),
                     ),
                   ],

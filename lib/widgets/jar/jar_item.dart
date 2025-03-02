@@ -7,12 +7,14 @@ class JarItem extends StatelessWidget {
   final Jar jar;
   final String userId; // User ID required for jar-specific actions
   final String jarId; // Jar ID required for unique identification
+  final List<String> collaborators;
 
   const JarItem({
     super.key,
     required this.jar,
     required this.userId,
     required this.jarId,
+    required this.collaborators,
   });
 
   @override
@@ -36,6 +38,7 @@ class JarItem extends StatelessWidget {
               jarImage: jar.jarImage,
               userId: userId, // Pass userId to JarPage
               jarId: jarId, // Pass jarId to JarPage
+              collaborators: collaborators,
             ),
           ),
         );

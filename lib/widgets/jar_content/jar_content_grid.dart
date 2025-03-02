@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:capture_mvp/models/s3_item.dart';
-import 'media_thumbnail.dart';
 import 'package:capture_mvp/services/s3_service.dart';
+import 'package:capture_mvp/widgets/calendar/content_grid_item.dart';
 
-/// A grid view displaying jar contents.
+/// A grid view displaying jar contents with animations and video support.
 class JarContentGrid extends StatelessWidget {
   final List<S3Item> items;
   final String userId;
   final String jarId;
+  final List<String> collaborators;
   final VoidCallback onDelete;
 
   const JarContentGrid({
@@ -15,6 +16,7 @@ class JarContentGrid extends StatelessWidget {
     required this.items,
     required this.userId,
     required this.jarId,
+    required this.collaborators,
     required this.onDelete,
   });
 
@@ -29,40 +31,17 @@ class JarContentGrid extends StatelessWidget {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
-        return GestureDetector(
-          onLongPress: () async {
-            bool confirm = await showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: Text('Delete Item'),
-                content: Text('Are you sure you want to delete this item?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: Text('Cancel'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    child: Text('Delete'),
-                  ),
-                ],
-              ),
-            );
-            if (confirm) {
-              // Perform soft delete
-              await S3Service(userId: userId).softDeleteItem(item.key);
-              // Trigger the callback to refresh the UI
-              onDelete();
-            }
+
+        return ContentItem(
+          content: {
+            'jarId': jarId,
+            'data': item.key, // This should be the S3 key, not just the URL
+            'type': item.type,
+            'jarName': 'Memory Jar', // Default name
+            'jarColor': '#FF5722', // Default color
           },
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: Colors.white,
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: MediaThumbnail(s3Item: item),
-          ),
+          userId: userId,
+          jarId: jarId,
         );
       },
     );

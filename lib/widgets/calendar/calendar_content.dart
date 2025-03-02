@@ -42,6 +42,7 @@ class _CalendarContentState extends State<CalendarContent> {
           'date': s3Item.uploadedAt ?? DateTime.now(),
           'jarName': jarName,
           'jarColor': jarColor,
+          'jarId': jarId,
         });
       }
     }
@@ -97,6 +98,7 @@ class _CalendarContentState extends State<CalendarContent> {
             return GroupedContent(
               title: key,
               contentList: contentList,
+              userId: widget.userId,
             );
           },
         );
