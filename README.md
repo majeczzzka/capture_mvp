@@ -46,7 +46,7 @@ Capture is a modern Flutter application designed to help users store and share m
 3. Configure Firebase:
    - Create a new Firebase project
    - Add your Android/iOS app to the Firebase project
-   - Download and add the configuration files (google-services.json for Android, GoogleService-Info.plist for iOS)
+   - Download and add the configuration files (GoogleService-Info.plist for iOS)
 
 4. Configure AWS Amplify:
    - Create an Amplify project
