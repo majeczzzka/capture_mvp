@@ -4,6 +4,7 @@ import '../utils/app_colors.dart';
 import '../widgets/nav/bottom_nav_bar.dart';
 import '../widgets/home/greeting_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'trash_screen.dart';
 
 /// ProfileScreen displays the user's profile with an avatar and greeting.
 class ProfileScreen extends StatelessWidget {
@@ -83,6 +84,32 @@ class ProfileScreen extends StatelessWidget {
                     userId: userId, // Pass userId to GreetingWidget
                   );
                 },
+              ),
+
+              const SizedBox(height: 32),
+
+              // Add Trash option
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ListTile(
+                  leading:
+                      const Icon(Icons.delete_outline, color: AppColors.fonts),
+                  title: const Text('Trash',
+                      style: TextStyle(color: AppColors.fonts)),
+                  subtitle: const Text('View and restore deleted items'),
+                  trailing: const Icon(Icons.arrow_forward_ios,
+                      size: 16, color: AppColors.fonts),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TrashScreen(userId: userId),
+                      ),
+                    );
+                  },
+                ),
               ),
 
               const SizedBox(
