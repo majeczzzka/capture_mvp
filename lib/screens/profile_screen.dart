@@ -1,16 +1,59 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/app_colors.dart';
 import '../widgets/nav/bottom_nav_bar.dart';
 import '../widgets/home/greeting_widget.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../repositories/user_repository.dart';
+import '../repositories/auth_repository.dart';
 import 'trash_screen.dart';
 
 /// ProfileScreen displays the user's profile with an avatar and greeting.
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   final String userId; // User ID for fetching user data
 
   const ProfileScreen({super.key, required this.userId});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final UserRepository _userRepository = UserRepository();
+  final AuthRepository _authRepository = AuthRepository();
+  String _username = 'User';
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final userData = await _userRepository.getUserData(widget.userId);
+      if (userData != null) {
+        setState(() {
+          _username = userData['username'] ?? 'User';
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _username = 'User';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Error loading user data: $e');
+      setState(() {
+        _username = 'User';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,9 +78,16 @@ class ProfileScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout, color: AppColors.fonts),
             onPressed: () async {
-              await FirebaseAuth.instance.signOut(); // Perform logout
-              Navigator.of(context)
-                  .pushReplacementNamed('/login'); // Redirect to login screen
+              try {
+                await _authRepository.signOut(); // Use repository for sign out
+                Navigator.of(context)
+                    .pushReplacementNamed('/login'); // Redirect to login screen
+              } catch (e) {
+                print('❌ Error during logout: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Logout failed: ${e.toString()}')),
+                );
+              }
             },
             tooltip: 'Logout',
           ),
@@ -51,40 +101,12 @@ class ProfileScreen extends StatelessWidget {
             mainAxisSize:
                 MainAxisSize.min, // Take up only required vertical space
             children: [
-              StreamBuilder<DocumentSnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(userId) // Fetch user document by ID
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  }
-
-                  if (snapshot.hasError || !snapshot.hasData) {
-                    return const Center(
-                      child: Text(
-                        'Failed to load profile',
-                        style: TextStyle(color: Colors.red, fontSize: 16),
-                      ),
-                    );
-                  }
-
-                  // Extract user data
-                  final userData =
-                      snapshot.data?.data() as Map<String, dynamic>?;
-                  final username =
-                      userData?['username'] ?? 'User'; // Fallback to 'User'
-
-                  // Use GreetingWidget here
-                  return GreetingWidget(
-                    name: username,
-                    userId: userId, // Pass userId to GreetingWidget
-                  );
-                },
-              ),
+              _isLoading
+                  ? const CircularProgressIndicator()
+                  : GreetingWidget(
+                      name: _username,
+                      userId: widget.userId,
+                    ),
 
               const SizedBox(height: 32),
 
@@ -105,7 +127,8 @@ class ProfileScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => TrashScreen(userId: userId),
+                        builder: (context) =>
+                            TrashScreen(userId: widget.userId),
                       ),
                     );
                   },

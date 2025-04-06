@@ -1,7 +1,7 @@
 import 'package:capture_mvp/widgets/auth/custom_text_form_field.dart';
 import 'package:capture_mvp/widgets/login/custom_button.dart';
 import 'package:flutter/material.dart';
-import 'package:capture_mvp/services/auth_service.dart';
+import 'package:capture_mvp/repositories/auth_repository.dart';
 
 // A screen for signing up.
 class SignUpScreen extends StatefulWidget {
@@ -12,7 +12,7 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class SignUpScreenState extends State<SignUpScreen> {
-  final AuthService _authService = AuthService();
+  final AuthRepository _authRepository = AuthRepository();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -102,13 +102,13 @@ class SignUpScreenState extends State<SignUpScreen> {
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
                     try {
-                      final user = await _authService.signUp(
+                      final user = await _authRepository.signUp(
                         _emailController.text.trim(),
                         _passwordController.text.trim(),
                       );
 
                       if (user != null) {
-                        await _authService.saveUsername(
+                        await _authRepository.saveUsername(
                           user.uid,
                           _usernameController.text.trim(),
                         );

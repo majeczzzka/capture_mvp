@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/s3_service.dart';
 import '../jar_content/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../repositories/media_repository.dart';
 
 /// A widget that displays a single content item from a jar (image or video)
 /// with flipping animation to show details on the back.
@@ -29,6 +31,7 @@ class _ContentItemState extends State<ContentItem>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _animation;
+  late final MediaRepository _mediaRepository;
   bool _isFlipped = false;
   String? _thumbnailUrl;
   bool _loadingThumbnail = false;
@@ -36,6 +39,9 @@ class _ContentItemState extends State<ContentItem>
   @override
   void initState() {
     super.initState();
+
+    // Initialize repositories
+    _mediaRepository = MediaRepository(userId: widget.userId);
 
     // Initialize the animation controller
     _controller = AnimationController(
@@ -51,7 +57,7 @@ class _ContentItemState extends State<ContentItem>
       ),
     );
 
-    // Check if this is a video and generate a thumbnail
+    // Check if this is a video and load or generate a thumbnail
     final String contentType = widget.content['type'] ?? '';
     final String contentUrl = widget.content['data'] ?? '';
 
@@ -63,40 +69,54 @@ class _ContentItemState extends State<ContentItem>
   Future<void> _loadThumbnail(String videoUrl) async {
     if (_loadingThumbnail) return;
 
+    // Immediately set placeholder to avoid rendering issues
     setState(() {
       _loadingThumbnail = true;
     });
 
-    try {
-      final String? thumbnail = await generateThumbnail(
-        videoUrl,
-        widget.userId,
-        widget.jarId,
-        [], // Empty list as we don't need to share the thumbnail
-      );
+    // Check if thumbnail is cached in the repository
+    if (_mediaRepository.isThumbnailCached(videoUrl)) {
+      setState(() {
+        _thumbnailUrl = _mediaRepository.getCachedThumbnail(videoUrl);
+        _loadingThumbnail = false;
+      });
+      return;
+    }
 
-      if (thumbnail != null) {
-        if (mounted) {
+    // Delay the actual thumbnail loading to prevent UI freezes during initial rendering
+    Future.delayed(const Duration(milliseconds: 200), () async {
+      if (!mounted) return;
+
+      try {
+        // Try to generate thumbnail with strict timeout
+        final String? thumbnail = await _mediaRepository.generateThumbnail(
+          videoUrl,
+          widget.jarId,
+          [], // Empty list as we don't need to share the thumbnail
+        ).timeout(const Duration(seconds: 2), onTimeout: () {
+          print("⏱️ Thumbnail generation timed out");
+          return null;
+        });
+
+        if (thumbnail != null && mounted) {
           setState(() {
             _thumbnailUrl = thumbnail;
             _loadingThumbnail = false;
           });
+        } else if (mounted) {
+          setState(() {
+            _loadingThumbnail = false;
+          });
         }
-      } else {
+      } catch (e) {
+        print("❌ Error generating thumbnail: $e");
         if (mounted) {
           setState(() {
             _loadingThumbnail = false;
           });
         }
       }
-    } catch (e) {
-      print("Error generating thumbnail: $e");
-      if (mounted) {
-        setState(() {
-          _loadingThumbnail = false;
-        });
-      }
-    }
+    });
   }
 
   @override
@@ -105,10 +125,89 @@ class _ContentItemState extends State<ContentItem>
     super.dispose();
   }
 
+  void _toggleFlip() {
+    setState(() {
+      _isFlipped = !_isFlipped;
+      if (_isFlipped) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    });
+  }
+
+  // Show confirmation dialog for deleting content
+  Future<void> _showDeleteConfirmation() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Content'),
+        content: const Text('Are you sure you want to delete this content?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      _deleteContent();
+    }
+  }
+
+  // Delete the content item
+  Future<void> _deleteContent() async {
+    try {
+      final contentUrl = widget.content['data'] ?? '';
+
+      // Get collaborators from the repository
+      final collaborators =
+          await _mediaRepository.getJarCollaborators(widget.jarId);
+
+      // Delete the item
+      await _mediaRepository.deleteItemFromJar(
+          widget.jarId, contentUrl, collaborators);
+
+      // Show a success message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Content deleted successfully')),
+        );
+      }
+
+      // Refresh the content if callback provided
+      if (widget.onContentChanged != null) {
+        widget.onContentChanged!();
+      }
+    } catch (e) {
+      print("❌ Error deleting content: $e");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to delete content')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Check if we're in calendar view (has jarName as a string, not a date)
+    bool isCalendarView = widget.content.containsKey('jarName') &&
+        widget.content['jarName'] is String &&
+        !widget.content['jarName'].toString().contains('-');
+
     return GestureDetector(
       onTap: _toggleFlip,
+      onLongPress: _showDeleteConfirmation,
       child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
@@ -127,7 +226,7 @@ class _ContentItemState extends State<ContentItem>
                     transform: Matrix4.identity()
                       ..rotateY(3.14), // Flip back side
                     alignment: Alignment.center,
-                    child: _buildBackSide(),
+                    child: _buildBackSide(isCalendarView),
                   ),
           );
         },
@@ -146,52 +245,46 @@ class _ContentItemState extends State<ContentItem>
   }
 
   /// Builds the back side of the card showing details and actions
-  Widget _buildBackSide() {
+  Widget _buildBackSide(bool isCalendarView) {
+    // Parse the jar color from the hex string
+    Color jarColor = Colors.grey; // Default color
+    if (widget.content.containsKey('jarColor')) {
+      try {
+        jarColor = Color(
+            int.parse(widget.content['jarColor'].replaceFirst('#', '0xFF')));
+      } catch (e) {
+        print("❌ Error parsing jar color: $e");
+      }
+    }
+
     return Card(
       elevation: 0, // Remove shadow to match front
       color: const Color(0xFFF5F5F5), // Light gray background
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Date and jar info
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Added on:',
+        child: Center(
+          child: isCalendarView
+              // Calendar view: Show only jar name in jar color
+              ? Text(
+                  widget.content['jarName'] ?? 'Unknown jar',
                   style: TextStyle(
-                    color: Color(0xFF666666),
-                    fontSize: 14,
+                    color: jarColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
+                  textAlign: TextAlign.center,
+                )
+              // Jar content view: Show only the date
+              : Text(
                   widget.content['jarName'] ?? 'Unknown date',
                   style: const TextStyle(
                     color: Color(0xFF333333),
-                    fontSize: 16,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
+                  textAlign: TextAlign.center,
                 ),
-              ],
-            ),
-
-            // Action buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Color(0xFF666666)),
-                  onPressed: _deleteContent,
-                  tooltip: 'Delete',
-                ),
-              ],
-            ),
-          ],
         ),
       ),
     );
@@ -202,241 +295,93 @@ class _ContentItemState extends State<ContentItem>
     final String contentUrl = widget.content['data'] ?? '';
     final String contentType = widget.content['type'] ?? '';
 
-    // For image content, try to load directly
+    // For image content, use CachedNetworkImage for efficient loading
     if (contentType != 'video') {
-      return Image.network(
-        contentUrl,
+      return CachedNetworkImage(
+        imageUrl: contentUrl,
         fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Center(
+        placeholder: (context, url) => Container(
+          color: Colors.grey[200],
+          child: const Center(
             child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
-                  : null,
+              strokeWidth: 2.0, // Thinner indicator
             ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            color: Colors.grey[300],
-            child: const Center(
-              child: Icon(
-                Icons.image,
-                size: 40,
-                color: Colors.grey,
-              ),
+          ),
+        ),
+        errorWidget: (context, url, error) => Container(
+          color: Colors.grey[300],
+          child: const Center(
+            child: Icon(
+              Icons.image,
+              size: 40,
+              color: Colors.grey,
             ),
-          );
-        },
+          ),
+        ),
+        memCacheWidth: 300, // Limit memory cache size
+        memCacheHeight: 300,
       );
     }
 
-    // For video content - use the generated thumbnail if available
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // If we have a thumbnail URL, use it; otherwise try direct loading
-        if (_thumbnailUrl != null)
-          Image.network(
-            _thumbnailUrl!,
+    // For video content, show the thumbnail if available
+    if (_thumbnailUrl != null) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          CachedNetworkImage(
+            imageUrl: _thumbnailUrl!,
             fit: BoxFit.cover,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Center(
+            placeholder: (context, url) => Container(
+              color: Colors.grey[200],
+              child: const Center(
                 child: CircularProgressIndicator(
-                  value: loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
-                      : null,
+                  strokeWidth: 2.0,
                 ),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              // Fall back to trying the content URL
-              return _buildVideoFallback(contentUrl);
-            },
-          )
-        else if (_loadingThumbnail)
-          // Show loading indicator while generating thumbnail
-          Container(
-            color: Colors.grey[200],
-            child: Center(
-              child: CircularProgressIndicator(),
-            ),
-          )
-        else
-          // Try loading directly from content URL as fallback
-          _buildVideoFallback(contentUrl),
-
-        // Add a semi-transparent gradient overlay to ensure play button visibility
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.black.withOpacity(0.0),
-                Colors.black.withOpacity(0.3),
-              ],
-            ),
-          ),
-        ),
-
-        // Always show a play button to indicate this is a video
-        Center(
-          child: Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 8,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.play_arrow,
-              size: 40,
-              color: Color(0xFF333333),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Fallback widget for video display when thumbnail generation fails
-  Widget _buildVideoFallback(String contentUrl) {
-    return Image.network(
-      contentUrl,
-      fit: BoxFit.cover,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Container(
-          color: Colors.grey[300],
-          child: Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
-                  : null,
-            ),
-          ),
-        );
-      },
-      errorBuilder: (context, error, stackTrace) {
-        // If all attempts fail, show a video icon on a light background
-        return Container(
-          color: Colors.grey[300],
-          child: Center(
-            child: Icon(
-              Icons.videocam,
-              size: 40,
-              color: Colors.grey[600],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  /// Toggle the flip animation
-  void _toggleFlip() {
-    setState(() {
-      _isFlipped = !_isFlipped;
-      if (_isFlipped) {
-        _controller.forward();
-      } else {
-        _controller.reverse();
-      }
-    });
-  }
-
-  /// Delete the content item from S3 and Firestore
-  Future<void> _deleteContent() async {
-    try {
-      final contentUrl = widget.content['data'];
-      if (contentUrl != null) {
-        // Show confirmation dialog
-        bool shouldDelete = await _showDeleteConfirmationDialog();
-        if (!shouldDelete) return;
-
-        // Extract the key from the URL
-        // The URL format is typically: https://[bucket].s3.[region].amazonaws.com/[key]
-        final Uri uri = Uri.parse(contentUrl);
-        final String path = uri.path;
-        final String key = path.startsWith('/') ? path.substring(1) : path;
-
-        if (key.isNotEmpty) {
-          // Delete from S3 using the archiveItemForUser method
-          await S3Service(userId: widget.userId)
-              .archiveItemForUser(widget.jarId, contentUrl);
-
-          // Notify the parent to refresh
-          if (widget.onContentChanged != null) {
-            widget.onContentChanged!();
-          }
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Item moved to trash'),
-                duration: Duration(seconds: 3),
               ),
-            );
-          }
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error deleting content: $e')),
-        );
-      }
-      print('Error deleting content: $e');
+            ),
+            errorWidget: (context, url, error) => const Icon(Icons.error),
+          ),
+          // Video play indicator overlay
+          Center(
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.play_arrow,
+                color: Colors.white,
+                size: 30,
+              ),
+            ),
+          ),
+        ],
+      );
     }
-  }
 
-  /// Show a confirmation dialog before deleting
-  Future<bool> _showDeleteConfirmationDialog() async {
-    return await showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Confirm Delete'),
-              content: const Text(
-                  'Are you sure you want to delete this item? This action cannot be undone.'),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('Cancel'),
-                  onPressed: () {
-                    Navigator.of(context).pop(false);
-                  },
-                ),
-                TextButton(
-                  child: const Text('Delete'),
-                  onPressed: () {
-                    Navigator.of(context).pop(true);
-                  },
-                ),
-              ],
-            );
-          },
-        ) ??
-        false;
-  }
+    // Show loading indicator while thumbnail is being generated
+    if (_loadingThumbnail) {
+      return Container(
+        color: Colors.grey[200],
+        child: const Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2.0,
+          ),
+        ),
+      );
+    }
 
-  /// Check if the content URL is a video
-  bool _isVideo(String url) {
-    final lowerUrl = url.toLowerCase();
-    return lowerUrl.endsWith('.mp4') ||
-        lowerUrl.endsWith('.mov') ||
-        lowerUrl.endsWith('.avi');
+    // Fallback for videos without thumbnails
+    return Container(
+      color: Colors.grey[300],
+      child: const Center(
+        child: Icon(
+          Icons.video_library,
+          size: 40,
+          color: Colors.grey,
+        ),
+      ),
+    );
   }
 }

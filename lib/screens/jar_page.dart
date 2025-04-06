@@ -5,7 +5,6 @@ import 'package:capture_mvp/widgets/nav/bottom_nav_bar.dart';
 import 'package:capture_mvp/widgets/header/header_widget_jar.dart';
 import 'package:capture_mvp/widgets/home/content_container.dart';
 import 'package:capture_mvp/widgets/jar_page/multimedia_options.dart';
-import 'package:capture_mvp/services/s3_service.dart';
 import 'jar_content_page.dart';
 
 class JarPage extends StatelessWidget {
@@ -27,45 +26,6 @@ class JarPage extends StatelessWidget {
     required this.jarId,
     required this.collaborators,
   });
-
-  Future<void> _deleteJar(BuildContext context) async {
-    bool confirm = await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Jar'),
-        content: const Text(
-            'Are you sure you want to delete this jar for all collaborators?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm) {
-      try {
-        final s3Service = S3Service(userId: userId);
-        await s3Service.deleteJar(jarId, collaborators);
-
-        // Close the page after deletion
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Jar deleted successfully!')),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Failed to delete jar. Please try again.')),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,12 +57,7 @@ class JarPage extends StatelessWidget {
                   children: [
                     SizedBox(
                       height: 60,
-                      child: HeaderWidgetJar(
-                        onSearchChanged: (query) {},
-                        userId: userId,
-                        jarId: jarId,
-                        onDeletePressed: () => _deleteJar(context),
-                      ),
+                      child: HeaderWidgetJar(),
                     ),
                     const Divider(
                         thickness: 1,

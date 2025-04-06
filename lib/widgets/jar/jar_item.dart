@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/jar_model.dart';
 import 'avatar_stack.dart';
 import '../../screens/jar_page.dart';
+import '../../repositories/jar_repository.dart';
 
 class JarItem extends StatelessWidget {
   final Jar jar;
@@ -16,6 +17,57 @@ class JarItem extends StatelessWidget {
     required this.jarId,
     required this.collaborators,
   });
+
+  /// Shows a confirmation dialog for leaving a jar
+  Future<void> _showLeaveJarDialog(BuildContext context) async {
+    bool confirm = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Leave Jar'),
+        content: const Text(
+          "You won't see this jar anymore. Others can keep adding memories, but you won't have access unless they invite you back.\n\nAll content will be archived for 90 days before permanent deletion.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Leave Jar'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm) {
+      try {
+        final jarRepository = JarRepository(userId: userId);
+        final success = await jarRepository.leaveJar(jarId);
+
+        // Show a success message
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(success
+                  ? 'You have left the jar.'
+                  : 'Failed to leave jar. Please try again.'),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Failed to leave jar. Please try again.')),
+          );
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +95,7 @@ class JarItem extends StatelessWidget {
           ),
         );
       },
+      onLongPress: () => _showLeaveJarDialog(context),
       child: Stack(
         alignment: Alignment.center,
         children: [

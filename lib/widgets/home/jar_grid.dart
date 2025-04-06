@@ -1,36 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:random_avatar/random_avatar.dart';
 import '../jar/jar_item.dart';
 import '../../models/jar_model.dart';
-import '../jar_content/jar_content_grid.dart';
+import '../../models/jar_data.dart';
+import '../../repositories/jar_repository.dart';
+import '../../utils/app_colors.dart'; // Import for colors
 
 /// A grid widget that displays a list of jars fetched from Firestore, filtered by a search query.
 class JarGrid extends StatelessWidget {
   final String searchQuery; // Search query to filter jars by title
   final String userId; // User ID to fetch jars for a specific user
   final List<String> collaborators;
+  final JarRepository jarRepository;
 
   const JarGrid({
     super.key,
     required this.searchQuery,
     required this.userId,
     required this.collaborators,
+    required this.jarRepository,
   });
-
-  /// ✅ **Fetches jars where the user is a collaborator**
-  Stream<QuerySnapshot> _getJarsStream() {
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('jars') // ✅ Fetch only the jars specific to this user
-        .snapshots();
-  }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _getJarsStream(), // ✅ Listen for real-time updates
+    return StreamBuilder<List<JarData>>(
+      stream: jarRepository.getFilteredJarsStream(searchQuery),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -45,14 +39,7 @@ class JarGrid extends StatelessWidget {
           );
         }
 
-        final jarDocs = snapshot.data?.docs ?? [];
-
-        // Filter jars by search query (case-insensitive)
-        final filteredJars = jarDocs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          final jarName = data['name'] ?? 'Untitled Jar';
-          return jarName.toLowerCase().contains(searchQuery.toLowerCase());
-        }).toList();
+        final filteredJars = snapshot.data ?? [];
 
         if (filteredJars.isEmpty) {
           return const Center(
@@ -73,20 +60,18 @@ class JarGrid extends StatelessWidget {
             childAspectRatio: 0.7,
           ),
           itemBuilder: (context, index) {
-            final doc = filteredJars[index];
-            final data = doc.data() as Map<String, dynamic>;
+            final jarData = filteredJars[index];
 
-            // 🔥 Ensure we fetch the collaborators correctly
-            final collaboratorAvatars =
-                (data['collaborators'] as List<dynamic>? ?? [])
-                    .map((collaboratorId) => RandomAvatar(
-                          collaboratorId.hashCode.toString(),
-                          height: 20,
-                          width: 20,
-                        ))
-                    .toList();
+            // Create avatars for collaborators
+            final collaboratorAvatars = jarData.collaborators
+                .map((collaboratorId) => RandomAvatar(
+                      collaboratorId.hashCode.toString(),
+                      height: 20,
+                      width: 20,
+                    ))
+                .toList();
 
-            // 🔥 Ensure avatars are valid, fallback if empty
+            // Ensure avatars are valid, fallback if empty
             final avatars = collaboratorAvatars.isNotEmpty
                 ? collaboratorAvatars
                 : [
@@ -96,20 +81,19 @@ class JarGrid extends StatelessWidget {
                     )
                   ];
 
-            final jar = Jar(
-              title: data['name'] ?? 'Untitled Jar',
-              filterColor:
-                  Color(int.parse(data['color'].replaceFirst('#', '0xFF'))),
-              images: avatars,
-              jarImage: 'assets/images/jar.png',
-              collaborators: List<String>.from(data['collaborators'] ?? []),
+            // Convert JarData to JarDisplayModel
+            final displayJar = JarDisplayModel.fromJarData(
+              jarData,
+              avatars,
+              defaultImage: 'assets/images/jar.png',
             );
 
             return JarItem(
-              jar: jar,
+              jar:
+                  displayJar, // The typedef ensures this works with existing code
               userId: userId,
-              jarId: doc.id,
-              collaborators: List<String>.from(data['collaborators'] ?? []),
+              jarId: jarData.id,
+              collaborators: jarData.collaborators,
             );
           },
         );

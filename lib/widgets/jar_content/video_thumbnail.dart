@@ -7,6 +7,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:math';
+import 'package:flutter/material.dart';
+import '../../repositories/media_repository.dart';
 
 /// Generates a thumbnail image from a video URL
 /// Returns the URL of the thumbnail in S3 or null if it fails
@@ -108,5 +110,140 @@ Future<String?> generateThumbnail(
   } catch (e) {
     print("❌ Error generating thumbnail: $e");
     return null;
+  }
+}
+
+/// A widget that displays a thumbnail for a video
+class VideoThumbnailWidget extends StatefulWidget {
+  final String videoUrl;
+  final String userId;
+  final String jarId;
+
+  const VideoThumbnailWidget({
+    Key? key,
+    required this.videoUrl,
+    required this.userId,
+    required this.jarId,
+  }) : super(key: key);
+
+  @override
+  State<VideoThumbnailWidget> createState() => _VideoThumbnailWidgetState();
+}
+
+class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
+  String? thumbnailUrl;
+  bool isLoading = true;
+  bool hasError = false;
+  late MediaRepository _mediaRepository;
+
+  @override
+  void initState() {
+    super.initState();
+    _mediaRepository = MediaRepository(userId: widget.userId);
+    _loadThumbnail();
+  }
+
+  Future<void> _loadThumbnail() async {
+    try {
+      setState(() {
+        isLoading = true;
+        hasError = false;
+      });
+
+      final url = await _mediaRepository.generateVideoThumbnail(
+        widget.videoUrl,
+        widget.jarId,
+      );
+
+      if (mounted) {
+        setState(() {
+          thumbnailUrl = url;
+          isLoading = false;
+          hasError = url == null;
+        });
+      }
+    } catch (e) {
+      print('Error loading video thumbnail: $e');
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          hasError = true;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return Container(
+        color: Colors.grey[200],
+        child: const Center(
+          child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+      );
+    }
+
+    if (hasError || thumbnailUrl == null) {
+      return Container(
+        color: Colors.grey[300],
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.videocam, size: 40, color: Colors.grey[600]),
+              const SizedBox(height: 8),
+              Text(
+                'Video preview unavailable',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Thumbnail image
+        Image.network(
+          thumbnailUrl!,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          errorBuilder: (context, error, stackTrace) {
+            print('Error loading thumbnail image: $error');
+            return Container(
+              color: Colors.grey[300],
+              child: const Center(
+                child: Icon(Icons.broken_image, size: 40),
+              ),
+            );
+          },
+        ),
+
+        // Play button overlay
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.3),
+            shape: BoxShape.circle,
+          ),
+          padding: const EdgeInsets.all(8),
+          child: const Icon(
+            Icons.play_arrow,
+            color: Colors.white,
+            size: 30,
+          ),
+        ),
+      ],
+    );
   }
 }

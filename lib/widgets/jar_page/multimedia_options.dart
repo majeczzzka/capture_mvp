@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-import 'package:capture_mvp/services/s3_service.dart';
+import '../../repositories/media_repository.dart';
+import 'icon_column.dart';
 
+/// Widget that displays multimedia options for adding content to a jar
 class MultimediaOptions extends StatefulWidget {
   final String userId;
   final String jarId;
   final List<String> collaborators;
+  final Function(String)? onContentAdded;
 
   const MultimediaOptions({
     super.key,
     required this.userId,
     required this.jarId,
     required this.collaborators,
+    this.onContentAdded,
   });
 
   @override
@@ -20,13 +23,22 @@ class MultimediaOptions extends StatefulWidget {
 }
 
 class _MultimediaOptionsState extends State<MultimediaOptions> {
-  late S3Service _s3Service;
+  late MediaRepository _mediaRepository;
   ScaffoldMessengerState? _scaffoldMessenger;
+
+  // Define which content types are currently active
+  final Map<String, bool> _activeContentTypes = {
+    'note': false,
+    'video': true,
+    'photo': true,
+    'voice note': false,
+    'template': false,
+  };
 
   @override
   void initState() {
     super.initState();
-    _s3Service = S3Service(userId: widget.userId);
+    _mediaRepository = MediaRepository(userId: widget.userId);
   }
 
   @override
@@ -36,7 +48,7 @@ class _MultimediaOptionsState extends State<MultimediaOptions> {
   }
 
   Future<void> _addContent(String type) async {
-    if (type != 'photo' && type != 'video') {
+    if (!_activeContentTypes[type]!) {
       _scaffoldMessenger?.showSnackBar(
         SnackBar(content: Text("$type functionality is not yet available.")),
       );
@@ -69,15 +81,35 @@ class _MultimediaOptionsState extends State<MultimediaOptions> {
         const SnackBar(content: Text("Uploading media...")),
       );
 
-      await _s3Service.uploadFileToJar(
-          widget.jarId, media.path, widget.collaborators, type);
-      await _s3Service.syncJarContentAcrossCollaborators(widget.jarId);
-
-      _scaffoldMessenger?.showSnackBar(
-        SnackBar(content: Text("$type uploaded successfully!")),
+      // Use repositories instead of services directly
+      // This would typically be implemented in MediaRepository
+      // For now we're maintaining compatibility with existing code
+      final success = await _mediaRepository.uploadMedia(
+        widget.jarId,
+        media.path,
+        type,
+        widget.collaborators,
       );
+
+      if (success) {
+        _scaffoldMessenger?.showSnackBar(
+          SnackBar(content: Text("$type uploaded successfully!")),
+        );
+
+        // Notify parent that content was added
+        if (widget.onContentAdded != null) {
+          widget.onContentAdded!(type);
+        }
+      } else {
+        _scaffoldMessenger?.showSnackBar(
+          SnackBar(content: Text("Failed to upload $type.")),
+        );
+      }
     } catch (e) {
       print('❌ Error uploading $type: $e');
+      _scaffoldMessenger?.showSnackBar(
+        SnackBar(content: Text("Error uploading $type: $e")),
+      );
     }
   }
 
@@ -88,43 +120,56 @@ class _MultimediaOptionsState extends State<MultimediaOptions> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildIconColumn("Note", Icons.edit, isActive: false),
-            _buildIconColumn("Video", Icons.videocam, isActive: true),
-            _buildIconColumn("Photo", Icons.photo, isActive: true),
+            IconColumn(
+              icon: Icons.edit,
+              label: "Note",
+              isEnabled: _activeContentTypes['note']!,
+              onTap: () => _addContent('note'),
+              iconColor: Colors.grey[800],
+              textColor: Colors.grey[800],
+            ),
+            IconColumn(
+              icon: Icons.videocam,
+              label: "Video",
+              isEnabled: _activeContentTypes['video']!,
+              onTap: () => _addContent('video'),
+              iconColor: Colors.grey[800],
+              textColor: Colors.grey[800],
+            ),
+            IconColumn(
+              icon: Icons.photo,
+              label: "Photo",
+              isEnabled: _activeContentTypes['photo']!,
+              onTap: () => _addContent('photo'),
+              iconColor: Colors.grey[800],
+              textColor: Colors.grey[800],
+            ),
           ],
         ),
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildIconColumn("Voice Note", Icons.mic, isActive: false),
+            IconColumn(
+              icon: Icons.mic,
+              label: "Voice Note",
+              isEnabled: _activeContentTypes['voice note']!,
+              onTap: () => _addContent('voice note'),
+              iconColor: Colors.grey[800],
+              textColor: Colors.grey[800],
+            ),
             const SizedBox(width: 24),
-            _buildIconColumn("Template", Icons.format_paint, isActive: false),
+            IconColumn(
+              icon: Icons.format_paint,
+              label: "Template",
+              isEnabled: _activeContentTypes['template']!,
+              onTap: () => _addContent('template'),
+              iconColor: Colors.grey[800],
+              textColor: Colors.grey[800],
+            ),
           ],
         ),
       ],
-    );
-  }
-
-  Widget _buildIconColumn(String label, IconData icon,
-      {required bool isActive}) {
-    return InkWell(
-      onTap: isActive ? () => _addContent(label.toLowerCase()) : null,
-      borderRadius: BorderRadius.circular(8),
-      splashColor: isActive ? Colors.grey.withOpacity(0.3) : null,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: isActive ? Colors.grey[800] : Colors.grey[400]),
-            const SizedBox(height: 4),
-            Text(label,
-                style: TextStyle(
-                    color: isActive ? Colors.grey[800] : Colors.grey[400])),
-          ],
-        ),
-      ),
     );
   }
 }

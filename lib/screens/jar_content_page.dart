@@ -2,13 +2,11 @@ import 'package:capture_mvp/widgets/jar_content/jar_content_grid.dart';
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 import '../widgets/nav/bottom_nav_bar.dart';
-import '../widgets/header/header_widget.dart';
+import '../widgets/header/header_widget_content.dart';
 import '../widgets/home/content_container.dart';
-import '../services/s3_service.dart';
 import '../models/s3_item.dart';
 import '../widgets/calendar/content_grid_item.dart';
-import 'package:amplify_flutter/amplify_flutter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../repositories/jar_repository.dart';
 
 /// Displays the contents of a specific jar.
 class JarContentPage extends StatefulWidget {
@@ -31,10 +29,12 @@ class _JarContentPageState extends State<JarContentPage> {
   List<S3Item> items = [];
   List<String> collaborators = [];
   bool _isLoading = true;
+  late final JarRepository _jarRepository;
 
   @override
   void initState() {
     super.initState();
+    _jarRepository = JarRepository(userId: widget.userId);
     _loadItems();
     _loadCollaborators();
   }
@@ -44,29 +44,45 @@ class _JarContentPageState extends State<JarContentPage> {
       _isLoading = true;
     });
 
-    List<S3Item> fetchedItems =
-        await S3Service(userId: widget.userId).getJarContents(widget.jarId);
+    try {
+      // Get the jar data from the repository
+      final jarData = await _jarRepository.getJarById(widget.jarId);
 
-    setState(() {
-      items = fetchedItems;
-      _isLoading = false;
-    });
+      if (jarData != null) {
+        // Convert ContentItems to S3Items for backward compatibility
+        // Filter out items deleted by current user
+        final fetchedItems = jarData.content
+            .where((item) => !item.isDeletedByUser(widget.userId))
+            .map((item) => item.toS3Item())
+            .toList();
+
+        setState(() {
+          items = fetchedItems;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          items = [];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print("❌ Error loading jar contents: $e");
+      setState(() {
+        items = [];
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _loadCollaborators() async {
     try {
-      final jarDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.userId)
-          .collection('jars')
-          .doc(widget.jarId)
-          .get();
+      // Get collaborators from the repository
+      final jarData = await _jarRepository.getJarById(widget.jarId);
 
-      if (jarDoc.exists && jarDoc.data() != null) {
-        List<String> fetchedCollaborators =
-            List<String>.from(jarDoc.data()!['collaborators'] ?? []);
+      if (jarData != null) {
         setState(() {
-          collaborators = fetchedCollaborators;
+          collaborators = jarData.collaborators;
         });
       }
     } catch (e) {
@@ -102,9 +118,11 @@ class _JarContentPageState extends State<JarContentPage> {
                           // Header Section
                           SizedBox(
                             height: 60,
-                            child: HeaderWidget(
+                            child: HeaderWidgetContent(
                               userId: widget.userId,
-                              onSearchChanged: (query) {},
+                              jarId: widget.jarId,
+                              collaborators: collaborators,
+                              onContentAdded: () => _loadItems(),
                             ),
                           ),
                           const Divider(
@@ -153,14 +171,18 @@ class _JarContentPageState extends State<JarContentPage> {
                                     ),
                                     itemBuilder: (context, index) {
                                       final item = items[index];
+                                      // Format the date nicely for display
+                                      String formattedDate = item.uploadedAt !=
+                                              null
+                                          ? '${item.uploadedAt.day}/${item.uploadedAt.month}/${item.uploadedAt.year}'
+                                          : 'Unknown date';
+
                                       return ContentItem(
                                         content: {
                                           'data': item.url,
                                           'type': item.type,
-                                          'jarName': item.uploadedAt
-                                              .toString()
-                                              .substring(0,
-                                                  10), // Show the date when flipped
+                                          'jarName':
+                                              formattedDate, // Use the formatted date
                                           'jarColor':
                                               '#FF5722', // Default color
                                         },

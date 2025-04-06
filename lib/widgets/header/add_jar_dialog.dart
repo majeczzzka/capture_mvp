@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/app_colors.dart';
+import '../../models/jar_data.dart';
+import '../../repositories/jar_repository.dart';
+import '../../repositories/user_repository.dart';
 
 /// A dialog for adding a new jar to Firestore.
 class AddJarDialog extends StatefulWidget {
@@ -17,6 +20,15 @@ class _AddJarDialogState extends State<AddJarDialog> {
   final _emailController = TextEditingController();
   final List<String> _collaboratorEmails = [];
   String _selectedColor = '#fbb4a5';
+  late final JarRepository _jarRepository;
+  late final UserRepository _userRepository;
+
+  @override
+  void initState() {
+    super.initState();
+    _jarRepository = JarRepository(userId: widget.userId);
+    _userRepository = UserRepository();
+  }
 
   /// Saves the jar to Firestore and ensures all collaborators have access.
   Future<void> _saveJar() async {
@@ -47,22 +59,18 @@ class _AddJarDialogState extends State<AddJarDialog> {
 
     print("🔍 Checking usernames: $_collaboratorEmails");
 
-    // 🔍 Convert usernames into user IDs before saving the jar
+    // 🔍 Convert usernames into user IDs using the repository
     for (String username in _collaboratorEmails) {
       print("🔍 Looking up user ID for username: $username");
 
       try {
-        final querySnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .where('username', isEqualTo: username)
-            .get();
+        final userId = await _userRepository.getUserIdByUsername(username);
 
-        if (querySnapshot.docs.isNotEmpty) {
-          final userId = querySnapshot.docs.first.id;
+        if (userId != null) {
           collaboratorUserIds.add(userId);
           print("✅ Found user ID for $username: $userId");
         } else {
-          print("⚠️ No user found for username: $username (Check Firestore!)");
+          print("⚠️ No user found for username: $username");
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('No matching user found for $username.'),
@@ -84,35 +92,26 @@ class _AddJarDialogState extends State<AddJarDialog> {
 
     print("✅ Final Collaborators List: $collaboratorUserIds");
 
-    final jarData = {
-      'name': _jarNameController.text.trim(),
-      'color': _selectedColor,
-      'collaborators': collaboratorUserIds, // ✅ Store actual user IDs
-      'shared': collaboratorUserIds.length > 1,
-      'content': [],
-    };
+    // Create JarData model
+    final JarData jarData = JarData(
+      id: '', // Will be assigned by Firestore
+      name: _jarNameController.text.trim(),
+      color: _selectedColor,
+      collaborators: collaboratorUserIds,
+      shared: collaboratorUserIds.length > 1,
+      content: [], // Empty content for new jar
+    );
 
     try {
-      // 🔥 Create the jar inside Firestore
-      final jarRef =
-          await FirebaseFirestore.instance.collection('jars').add(jarData);
-      print("✅ Jar saved successfully: ${jarRef.id}");
+      // Create the jar using the repository
+      final jarId = await _jarRepository.createJar(jarData);
 
-      // 🔥 Add the jar to each collaborator's Firestore collection
-      for (String userId in collaboratorUserIds) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .collection('jars')
-            .doc(jarRef.id)
-            .set(jarData);
-
-        print("✅ Jar added for user: $userId");
+      if (jarId != null) {
+        print("✅ Jar saved successfully: $jarId");
+        Navigator.of(context).pop();
+      } else {
+        throw Exception('Failed to create jar');
       }
-
-      print("🔍 Collaborators list before upload: $collaboratorUserIds");
-
-      Navigator.of(context).pop();
     } catch (e) {
       print('❌ Error saving jar: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -232,16 +231,14 @@ class _AddJarDialogState extends State<AddJarDialog> {
             ),
           ),
         ),
-        ElevatedButton(
+        TextButton(
           onPressed: _saveJar,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.background,
-            foregroundColor: AppColors.selectedFonts,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+          child: Text(
+            'Save',
+            style: TextStyle(
+              color: AppColors.selectedFonts,
             ),
           ),
-          child: const Text('Save'),
         ),
       ],
     );

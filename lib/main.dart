@@ -10,6 +10,8 @@ import 'package:amplify_storage_s3/amplify_storage_s3.dart';
 import 'amplifyconfiguration.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'services/s3_service.dart';
+import 'repositories/s3_repository.dart';
+import 'repositories/auth_repository.dart';
 // Screens
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
@@ -108,13 +110,24 @@ void main() async {
     print("⚠️ ERROR: .env file could not be loaded: $e");
   }
 
+  // Initialize Firebase FIRST before any other services
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print("✅ Firebase initialized successfully");
+  } catch (e) {
+    print("⚠️ Failed to initialize Firebase: $e");
+  }
+
+  // Then configure Amplify AFTER Firebase is initialized
   try {
     await configureAmplify();
     print("✅ Amplify configured successfully");
 
     // Test S3 bucket access
-    final s3Service = S3Service(userId: 'init-check');
-    final bucketOk = await s3Service.checkAndInitializeS3();
+    final s3Repository = S3Repository(userId: 'init-check');
+    final bucketOk = await s3Repository.checkAndInitializeS3();
     if (bucketOk) {
       print("✅ S3 bucket is accessible");
     } else {
@@ -126,12 +139,6 @@ void main() async {
     print("⚠️ Failed to configure Amplify: $e");
   }
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  print("✅ Firebase initialized successfully");
-
   runApp(const CaptureApp());
 }
 
@@ -141,6 +148,8 @@ class CaptureApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authRepository = AuthRepository();
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: SplashScreen(), // The wrapper to manage authentication flow
@@ -149,14 +158,14 @@ class CaptureApp extends StatelessWidget {
         '/signup': (context) => SignUpScreen(),
         '/home': (context) => const HomeScreen(),
         '/calendar': (context) {
-          final user = FirebaseAuth.instance.currentUser;
+          final user = authRepository.getCurrentUser();
           if (user != null) {
             return CalendarScreen(userId: user.uid);
           }
           return LoginScreen(); // Redirect to login if no user is found
         },
         '/profile': (context) {
-          final user = FirebaseAuth.instance.currentUser;
+          final user = authRepository.getCurrentUser();
           if (user != null) {
             return ProfileScreen(
               userId: user.uid,
@@ -165,7 +174,7 @@ class CaptureApp extends StatelessWidget {
           return LoginScreen();
         },
         '/trash': (context) {
-          final user = FirebaseAuth.instance.currentUser;
+          final user = authRepository.getCurrentUser();
           if (user != null) {
             return TrashScreen(userId: user.uid);
           }
@@ -179,10 +188,13 @@ class CaptureApp extends StatelessWidget {
 /// A wrapper widget to handle user authentication state.
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
+
   @override
   Widget build(BuildContext context) {
+    final authRepository = AuthRepository();
+
     return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+      stream: authRepository.authStateChanges(),
       builder: (context, snapshot) {
         print("AuthWrapper: Checking user state");
         if (snapshot.connectionState == ConnectionState.active) {

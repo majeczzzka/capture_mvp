@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:capture_mvp/models/s3_item.dart';
-import 'package:capture_mvp/services/s3_service.dart';
 import 'package:capture_mvp/widgets/calendar/content_grid_item.dart';
 
 /// A grid view displaying jar contents with animations and video support.
@@ -8,16 +7,16 @@ class JarContentGrid extends StatelessWidget {
   final List<S3Item> items;
   final String userId;
   final String jarId;
-  final List<String> collaborators;
   final VoidCallback onDelete;
+  final String jarName;
 
   const JarContentGrid({
     super.key,
     required this.items,
     required this.userId,
     required this.jarId,
-    required this.collaborators,
     required this.onDelete,
+    this.jarName = 'Memory Jar',
   });
 
   @override
@@ -35,10 +34,11 @@ class JarContentGrid extends StatelessWidget {
         return ContentItem(
           content: {
             'jarId': jarId,
-            'data': item.key, // This should be the S3 key, not just the URL
+            'data': item.key,
             'type': item.type,
-            'jarName': 'Memory Jar', // Default name
-            'jarColor': '#FF5722', // Default color
+            'jarName': jarName,
+            'jarColor':
+                '#FF5722', // Default color - consider making this a parameter
           },
           userId: userId,
           jarId: jarId,

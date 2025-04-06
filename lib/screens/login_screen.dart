@@ -1,7 +1,7 @@
 import 'package:capture_mvp/widgets/login/custom_button.dart';
 import 'package:capture_mvp/widgets/login/custom_text_field.dart';
 import 'package:flutter/material.dart';
-import 'package:capture_mvp/services/auth_service.dart';
+import 'package:capture_mvp/repositories/auth_repository.dart';
 
 // A screen for logging in.
 class LoginScreen extends StatefulWidget {
@@ -12,7 +12,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class LoginScreenState extends State<LoginScreen> {
-  final AuthService _authService = AuthService();
+  final AuthRepository _authRepository = AuthRepository();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -53,7 +53,7 @@ class LoginScreenState extends State<LoginScreen> {
               label: 'Login',
               onPressed: () async {
                 try {
-                  final user = await _authService.signIn(
+                  final user = await _authRepository.signIn(
                     _emailController.text.trim(),
                     _passwordController.text.trim(),
                   );

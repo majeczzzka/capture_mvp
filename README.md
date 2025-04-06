@@ -33,22 +33,26 @@ Capture is a modern Flutter application designed to help users store and share m
 ### Installation
 
 1. Clone the repository:
+
    ```
    git clone https://github.com/yourusername/capture_mvp.git
    cd capture_mvp
    ```
 
 2. Install dependencies:
+
    ```
    flutter pub get
    ```
 
 3. Configure Firebase:
+
    - Create a new Firebase project
    - Add your Android/iOS app to the Firebase project
    - Download and add the configuration files (GoogleService-Info.plist for iOS)
 
 4. Configure AWS Amplify:
+
    - Create an Amplify project
    - Set up Storage category
    - Run amplify init and amplify push in your project
@@ -68,11 +72,46 @@ Capture is a modern Flutter application designed to help users store and share m
 
 ## Testing
 
-The application includes unit tests for critical components:
+### Unit Tests
+
+The application includes comprehensive unit tests for models, utilities, and services:
 
 ```
-flutter test
+flutter test test/unit
 ```
+
+### Widget Tests
+
+Widget tests verify proper rendering and interaction:
+
+```
+flutter test test/widget
+```
+
+### Integration Tests
+
+Integration tests verify complete user flows:
+
+```
+flutter test integration_test
+```
+
+For integration tests on a real device, use:
+
+```
+./run_integration_tests.sh
+```
+
+This script helps you select the specific test to run and on which device.
+
+### Test Coverage
+
+The test suite includes:
+
+- **Model Tests**: S3Item, JarModel
+- **Utility Tests**: MonthUtil, AppColors, video thumbnail
+- **Widget Tests**: ContentItem, JarItem
+- **Integration Tests**: App initialization, jar content, jar creation
 
 ## Contributing
 

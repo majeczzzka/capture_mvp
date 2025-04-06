@@ -8,12 +8,14 @@ class GroupedContent extends StatelessWidget {
   final String title;
   final List<Map<String, dynamic>> contentList;
   final String userId;
+  final VoidCallback? onContentChanged;
 
   const GroupedContent({
     super.key,
     required this.title,
     required this.contentList,
     required this.userId,
+    this.onContentChanged,
   });
 
   @override
@@ -48,12 +50,11 @@ class GroupedContent extends StatelessWidget {
           itemCount: contentList.length,
           itemBuilder: (context, index) {
             final content = contentList[index];
-            print(
-                "Creating ContentItem for: ${content['jarName']}"); // Debugging
             return ContentItem(
               content: content,
               userId: userId,
               jarId: content['jarId'],
+              onContentChanged: onContentChanged,
             );
           },
         ),

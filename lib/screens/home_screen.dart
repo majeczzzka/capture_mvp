@@ -6,6 +6,8 @@ import '../widgets/home/greeting_widget.dart';
 import '../widgets/home/jar_grid.dart';
 import '../services/user_service.dart';
 import '../widgets/home/content_container.dart';
+import '../models/jar_data.dart';
+import '../repositories/jar_repository.dart';
 
 /// The main screen of the app displaying a greeting, jar grid, and navigation bar.
 class HomeScreen extends StatefulWidget {
@@ -17,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 
 class HomeScreenState extends State<HomeScreen> {
   final UserService _userService = UserService(); // User service instance
+  late JarRepository _jarRepository; // Repository for jar operations
 
   String _searchQuery = ''; // Holds the current search query
   String? _username; // Holds the fetched username
@@ -34,11 +37,16 @@ class HomeScreenState extends State<HomeScreen> {
   Future<void> _initializeUser() async {
     final user = await _userService.getCurrentUser();
     if (!mounted) return; // Return early if the widget has been disposed.
+
     setState(() {
       _userId = user?.uid;
       _username = user?.username ?? 'User';
       _isLoading = false;
     });
+
+    if (_userId != null) {
+      _jarRepository = JarRepository(userId: _userId!);
+    }
   }
 
   /// Updates the search query and triggers UI refresh.
@@ -107,12 +115,16 @@ class HomeScreenState extends State<HomeScreen> {
                       endIndent: 8,
                     ),
                     Expanded(
-                      child: JarGrid(
-                        searchQuery: _searchQuery,
-                        userId: _userId!,
-                        collaborators:
-                            _collaborators, // Pass the collaborators list
-                      ),
+                      child: _userId == null
+                          ? const Center(
+                              child: Text('User ID not available'),
+                            )
+                          : JarGrid(
+                              searchQuery: _searchQuery,
+                              userId: _userId!,
+                              collaborators: _collaborators,
+                              jarRepository: _jarRepository,
+                            ),
                     ),
                   ],
                 ),

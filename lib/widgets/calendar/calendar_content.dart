@@ -3,6 +3,7 @@ import 'package:capture_mvp/models/s3_item.dart';
 import 'package:capture_mvp/widgets/calendar/grouped_content.dart'; // Assuming the groupedContent widget is in this file
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../repositories/calendar_repository.dart';
 
 /// A widget that displays content in a calendar view.
 class CalendarContent extends StatefulWidget {
@@ -15,55 +16,27 @@ class CalendarContent extends StatefulWidget {
 }
 
 class _CalendarContentState extends State<CalendarContent> {
-  Future<Map<String, List<Map<String, dynamic>>>>
-      _fetchAndGroupContent() async {
-    final List<Map<String, dynamic>> contentData = [];
+  late final CalendarRepository _calendarRepository;
+  late Future<Map<String, List<Map<String, dynamic>>>> _contentFuture;
 
-    final jarsSnapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(widget.userId)
-        .collection('jars')
-        .get();
+  @override
+  void initState() {
+    super.initState();
+    _calendarRepository = CalendarRepository(userId: widget.userId);
+    _refreshContent();
+  }
 
-    for (final jar in jarsSnapshot.docs) {
-      final data = jar.data() as Map<String, dynamic>;
-      final jarId = jar.id; // Get the jar ID
-      final jarName = data['name'] ?? 'Unknown Jar';
-      final jarColor = data['color'] ?? '#000000';
-
-      // Fetch images from AWS S3
-      List<S3Item> s3Items =
-          await S3Service(userId: widget.userId).getJarContents(jarId);
-
-      for (final s3Item in s3Items) {
-        contentData.add({
-          'type': 'image',
-          'data': s3Item.url,
-          'date': s3Item.uploadedAt ?? DateTime.now(),
-          'jarName': jarName,
-          'jarColor': jarColor,
-          'jarId': jarId,
-        });
-      }
-    }
-
-    // Sort and group by year-month
-    contentData.sort((a, b) => b['date'].compareTo(a['date']));
-    final Map<String, List<Map<String, dynamic>>> groupedContent = {};
-
-    for (final content in contentData) {
-      final date = content['date'] as DateTime;
-      final key = '${date.year}-${date.month.toString().padLeft(2, '0')}';
-      groupedContent.putIfAbsent(key, () => []).add(content);
-    }
-
-    return groupedContent;
+  /// Force a refresh of the content
+  void _refreshContent() {
+    setState(() {
+      _contentFuture = _calendarRepository.fetchAndGroupContent();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, List<Map<String, dynamic>>>>(
-      future: _fetchAndGroupContent(),
+      future: _contentFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -99,6 +72,7 @@ class _CalendarContentState extends State<CalendarContent> {
               title: key,
               contentList: contentList,
               userId: widget.userId,
+              onContentChanged: _refreshContent, // Pass the refresh callback
             );
           },
         );
